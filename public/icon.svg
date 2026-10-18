@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#065f46" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#022c22" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded squircle -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+
+  <!-- Inner Notebook / Ledger Card -->
+  <g filter="url(#shadow)">
+    <!-- Ledger Spine & Pages -->
+    <rect x="96" y="96" width="320" height="320" rx="32" fill="#ffffff" />
+    <!-- Book Bookmark / Header band -->
+    <path d="M 96 128 C 96 110.3 110.3 96 128 96 L 384 96 C 401.7 96 416 110.3 416 128 L 416 160 L 96 160 Z" fill="#10b981" />
+    
+    <!-- Ledger Binder Rings on Left -->
+    <circle cx="120" cy="190" r="10" fill="#047857" />
+    <circle cx="120" cy="256" r="10" fill="#047857" />
+    <circle cx="120" cy="322" r="10" fill="#047857" />
+
+    <!-- Ledger Ruled Lines -->
+    <rect x="150" y="200" width="220" height="12" rx="6" fill="#e2e8f0" />
+    <rect x="150" y="235" width="160" height="12" rx="6" fill="#e2e8f0" />
+    <rect x="150" y="270" width="190" height="12" rx="6" fill="#e2e8f0" />
+
+    <!-- Handshake / Currency Badge in bottom right -->
+    <circle cx="340" cy="340" r="56" fill="url(#goldGrad)" filter="url(#shadow)" />
+    <!-- Brazilian Currency / Check Symbol -->
+    <text x="340" y="356" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="#ffffff" text-anchor="middle">R$</text>
+  </g>
+</svg>

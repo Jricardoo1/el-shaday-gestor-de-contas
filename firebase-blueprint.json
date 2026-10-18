@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Store configuration, contact information and preferences",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string", "description": "Trade name of the store" },
+        "ownerName": { "type": "string", "description": "Name of the merchant owner" },
+        "phone": { "type": "string", "description": "WhatsApp contact phone" },
+        "pixKey": { "type": "string", "description": "Store Pix Key for customer payments" },
+        "pixKeyType": { "type": "string", "description": "Pix Key type" },
+        "city": { "type": "string", "description": "City of the store" },
+        "defaultDueDays": { "type": "number", "description": "Default payment term in days" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["storeName"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer profile and debt limit data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Customer unique identifier" },
+        "name": { "type": "string", "description": "Full name of the customer" },
+        "nickname": { "type": "string", "description": "Nickname or identifier" },
+        "phone": { "type": "string", "description": "Customer phone or WhatsApp" },
+        "cpf": { "type": "string", "description": "Customer CPF document" },
+        "cnpj": { "type": "string", "description": "Customer CNPJ document" },
+        "address": { "type": "string", "description": "Customer physical address" },
+        "creditLimit": { "type": "number", "description": "Maximum credit limit in BRL" },
+        "notes": { "type": "string", "description": "General customer observations" },
+        "customerType": { "type": "string", "description": "individual or empresa" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" }
+      },
+      "required": ["id", "name", "phone", "createdAt"]
+    },
+    "FiadoEntry": {
+      "title": "FiadoEntry",
+      "description": "Debit transaction or credit order on customer account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Transaction unique identifier" },
+        "customerId": { "type": "string", "description": "Reference to the customer ID" },
+        "amount": { "type": "number", "description": "Total original amount in BRL" },
+        "paidAmount": { "type": "number", "description": "Amount already paid towards this entry" },
+        "description": { "type": "string", "description": "Description of items consumed" },
+        "date": { "type": "string", "description": "Date of transaction (YYYY-MM-DD)" },
+        "dueDate": { "type": "string", "description": "Date due for payment (YYYY-MM-DD)" },
+        "status": { "type": "string", "description": "pending, partially_paid, paid, or overdue" },
+        "notes": { "type": "string", "description": "Additional notes on the transaction" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" }
+      },
+      "required": ["id", "customerId", "amount", "paidAmount", "description", "date", "dueDate", "status", "createdAt"]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "Payment or prepaid credit receipt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Payment transaction unique identifier" },
+        "customerId": { "type": "string", "description": "Reference to the customer ID" },
+        "fiadoEntryId": { "type": "string", "description": "Optional reference to specific fiado entry" },
+        "amount": { "type": "number", "description": "Amount paid in BRL" },
+        "date": { "type": "string", "description": "Date of payment (YYYY-MM-DD)" },
+        "method": { "type": "string", "description": "pix, cash, card_debit, card_credit, other" },
+        "receiptNumber": { "type": "string", "description": "Unique receipt code" },
+        "notes": { "type": "string", "description": "Payment notes" },
+        "isPrepaidCredit": { "type": "boolean", "description": "Whether this is prepaid balance" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of payment" }
+      },
+      "required": ["id", "customerId", "amount", "date", "method", "receiptNumber", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/stores/{storeId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Store preferences and profile document"
+    },
+    "/stores/{storeId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Customers managed by this store"
+    },
+    "/stores/{storeId}/entries/{entryId}": {
+      "schema": { "$ref": "#/entities/FiadoEntry" },
+      "description": "Fiado ledger entries for this store"
+    },
+    "/stores/{storeId}/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentRecord" },
+      "description": "Payment receipts recorded by this store"
+    }
+  }
+}

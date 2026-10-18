@@ -1,0 +1,6 @@
+{
+  "name": "Controle de Fiado",
+  "description": "Aplicativo completo de gestão de fiado para comerciantes: controle de clientes, compras, vencimentos, pagamentos parciais, cobrança via WhatsApp, acesso 100% offline e assinatura flexível a R$ 9,90/mês liberada via PIX.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny All Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Health / connectivity probe
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Stores collection partitioned by store ID
+    match /stores/{storeId} {
+      allow get, list: if isValidId(storeId);
+      allow create, update: if isValidId(storeId);
+      allow delete: if isValidId(storeId);
+
+      // Customers subcollection
+      match /customers/{customerId} {
+        allow get, list: if isValidId(storeId);
+        allow create, update: if isValidId(storeId) && isValidId(customerId);
+        allow delete: if isValidId(storeId) && isValidId(customerId);
+      }
+
+      // Fiado Entries subcollection
+      match /entries/{entryId} {
+        allow get, list: if isValidId(storeId);
+        allow create, update: if isValidId(storeId) && isValidId(entryId);
+        allow delete: if isValidId(storeId) && isValidId(entryId);
+      }
+
+      // Payments subcollection
+      match /payments/{paymentId} {
+        allow get, list: if isValidId(storeId);
+        allow create, update: if isValidId(storeId) && isValidId(paymentId);
+        allow delete: if isValidId(storeId) && isValidId(paymentId);
+      }
+    }
+  }
+}
