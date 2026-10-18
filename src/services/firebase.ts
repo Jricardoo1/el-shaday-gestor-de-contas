@@ -14,6 +14,7 @@ import {
 import { getAuth, signInAnonymously, onAuthStateChanged, User, Auth } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
+import { AuthService } from './auth';
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -83,6 +84,10 @@ class FirebaseServiceClass {
   }
 
   public getStoreId(): string {
+    const authUserId = AuthService.getActiveUserId();
+    if (authUserId) {
+      return authUserId;
+    }
     if (this.currentUser?.uid) {
       return this.currentUser.uid;
     }

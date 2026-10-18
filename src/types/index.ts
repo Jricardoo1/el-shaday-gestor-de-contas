@@ -145,3 +145,16 @@ export interface MerchantAdminRecord {
   registeredAt: string;
   totalPaidFees: number;
 }
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  storeName: string;
+  passwordHash: string;
+  phone?: string;
+  city?: string;
+  role: 'merchant' | 'admin';
+  createdAt: string;
+  lastLoginAt: string;
+}

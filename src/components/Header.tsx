@@ -10,8 +10,9 @@ import {
   Smartphone,
   Wallet,
   Send,
+  User,
 } from 'lucide-react';
-import { StoreSettings, LicenseState } from '../types';
+import { StoreSettings, LicenseState, UserAccount } from '../types';
 import { NetworkStatusBadge } from './OfflineIndicator';
 import { PWAInstallButton } from './PWAInstallButton';
 import { CloudDatabaseBadge } from './CloudDatabaseBadge';
@@ -19,6 +20,7 @@ import { CloudDatabaseBadge } from './CloudDatabaseBadge';
 interface HeaderProps {
   settings: StoreSettings;
   license: LicenseState;
+  user?: UserAccount | null;
   onOpenNewFiado: () => void;
   onOpenNewPayment: () => void;
   onOpenPrepaidCredit: () => void;
@@ -27,11 +29,14 @@ interface HeaderProps {
   onOpenAdmin: () => void;
   onOpenBroadcast?: () => void;
   onOpenCloudDatabase?: () => void;
+  onOpenUserAccount?: () => void;
+  onOpenLogin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   settings,
   license,
+  user,
   onOpenNewFiado,
   onOpenNewPayment,
   onOpenPrepaidCredit,
@@ -40,6 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
   onOpenBroadcast,
   onOpenCloudDatabase,
+  onOpenUserAccount,
+  onOpenLogin,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-emerald-800 text-white shadow-md border-b border-emerald-900">
@@ -158,6 +165,46 @@ export const Header: React.FC<HeaderProps> = ({
             <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>Master</span>
           </button>
+
+          {/* User Account / Profile button */}
+          {user ? (
+            <button
+              type="button"
+              onClick={onOpenUserAccount}
+              title={`Usuário ativo: ${user.name} (${user.storeName}) • Clique para ver dados, trocar de conta ou sair`}
+              className={`h-9 sm:h-9.5 px-2.5 inline-flex items-center gap-1.5 rounded-xl border text-xs font-bold transition shrink-0 active:scale-95 cursor-pointer shadow-xs ${
+                user.id === 'usr_demo_principal'
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-400/50'
+                  : 'bg-emerald-900/80 hover:bg-emerald-900 text-white border-emerald-400/40'
+              }`}
+            >
+              <div className="w-5 h-5 rounded-full bg-emerald-400 text-emerald-950 font-black text-[10px] flex items-center justify-center shadow-xs">
+                {user.name.slice(0, 1).toUpperCase()}
+              </div>
+              <span className="hidden sm:inline max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
+              {user.id === 'usr_demo_principal' ? (
+                <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase hidden md:inline">
+                  Demo
+                </span>
+              ) : (
+                <span className="text-[9px] bg-emerald-400 text-emerald-950 font-black px-1.5 py-0.2 rounded-full uppercase hidden md:inline">
+                  Minha Conta
+                </span>
+              )}
+            </button>
+          ) : (
+            onOpenLogin && (
+              <button
+                type="button"
+                onClick={onOpenLogin}
+                title="Entrar com Minha Conta ou Cadastrar Novo Usuário"
+                className="h-9 sm:h-9.5 px-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-md active:scale-95 shrink-0 cursor-pointer animate-pulse"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Entrar / Cadastrar</span>
+              </button>
+            )
+          )}
 
           <button
             onClick={onOpenSettings}

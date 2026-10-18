@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Customer, FiadoEntry, PaymentRecord, StoreSettings, LicenseState } from './types';
+import { Customer, FiadoEntry, PaymentRecord, StoreSettings, LicenseState, UserAccount } from './types';
 import { StorageService } from './services/storage';
+import { AuthService } from './services/auth';
 import { Header } from './components/Header';
 import { Navigation, NavTab } from './components/Navigation';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -28,9 +29,17 @@ import { WhatsAppBroadcastModal } from './components/WhatsAppBroadcastModal';
 import { PrepaidCreditModal } from './components/PrepaidCreditModal';
 import { CollectionSuggestionsModal } from './components/CollectionSuggestionsModal';
 import { CloudDatabaseModal } from './components/CloudDatabaseModal';
+import { AuthModal } from './components/AuthModal';
+import { UserAccountModal } from './components/UserAccountModal';
 import confetti from 'canvas-confetti';
 
 export default function App() {
+  // User Authentication State
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => AuthService.getCurrentUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [isUserAccountModalOpen, setIsUserAccountModalOpen] = useState(false);
+
   // Main Data States loaded from StorageService (LocalStorage / Offline first)
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [entries, setEntries] = useState<FiadoEntry[]>([]);
@@ -87,14 +96,24 @@ export default function App() {
 
   useEffect(() => {
     reloadData();
-    // Reconcile and synchronize automatically with the free cloud Firestore database
-    StorageService.syncWithCloud()
-      .then(() => {
-        reloadData();
-      })
-      .catch((err) => {
-        console.warn('Sincronização inicial com nuvem:', err);
-      });
+    // Subscribe to authentication changes (login, logout, account switch)
+    const unsub = AuthService.onAuthChange((user) => {
+      setCurrentUser(user);
+      reloadData();
+      if (user) {
+        StorageService.syncWithCloud()
+          .then(() => {
+            reloadData();
+          })
+          .catch((err) => {
+            console.warn('Sincronização em nuvem da conta:', err);
+          });
+      }
+    });
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   // Helper to ensure all open modals are closed before opening a new one
@@ -117,6 +136,37 @@ export default function App() {
     setIsCollectionSuggestionsOpen(false);
     setCollectionSuggestionsCustomer(undefined);
     setIsCloudDatabaseOpen(false);
+    setIsAuthModalOpen(false);
+    setIsUserAccountModalOpen(false);
+  };
+
+  const handleOpenLogin = (mode: 'login' | 'register' = 'login') => {
+    closeAllModals();
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleOpenUserAccount = () => {
+    closeAllModals();
+    setIsUserAccountModalOpen(true);
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setCurrentUser(null);
+    closeAllModals();
+    reloadData();
+    setAuthModalMode('login');
+    setIsAuthModalOpen(true);
+  };
+
+  const handleLoginSuccess = (user: UserAccount) => {
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    reloadData();
+    StorageService.syncWithCloud()
+      .then(() => reloadData())
+      .catch((err) => console.warn('Erro ao sincronizar após login:', err));
   };
 
   const handleOpenCustomerModal = (customer: Customer | null = null) => {
@@ -277,6 +327,7 @@ export default function App() {
       <Header
         settings={settings}
         license={license}
+        user={currentUser}
         onOpenNewFiado={() => handleOpenNewFiado(undefined)}
         onOpenNewPayment={() => handleOpenNewPayment(undefined)}
         onOpenPrepaidCredit={() => handleOpenPrepaidCredit(undefined)}
@@ -285,7 +336,41 @@ export default function App() {
         onOpenAdmin={handleOpenAdmin}
         onOpenBroadcast={handleOpenBroadcast}
         onOpenCloudDatabase={handleOpenCloudDatabase}
+        onOpenUserAccount={handleOpenUserAccount}
+        onOpenLogin={() => handleOpenLogin('login')}
       />
+
+      {/* Demo Account Alert / Call to Action Banner */}
+      {currentUser?.id === 'usr_demo_principal' && (
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 px-3 sm:px-4 py-2 text-xs font-bold shadow-xs border-b border-amber-600/30">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="bg-slate-950 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-xs">
+                Modo Demonstração
+              </span>
+              <span>
+                Você está navegando como <strong>{currentUser.storeName}</strong>. Deseja salvar seus próprios clientes e fiados na nuvem individualmente?
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleOpenLogin('register')}
+                className="px-3 py-1 bg-slate-950 hover:bg-slate-900 text-white rounded-lg text-xs font-black transition cursor-pointer shadow-xs active:scale-95"
+              >
+                Criar Minha Conta Grátis
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenLogin('login')}
+                className="px-2.5 py-1 bg-white/90 hover:bg-white text-slate-950 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95 shadow-xs"
+              >
+                Entrar com Outro Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <Navigation
@@ -560,6 +645,27 @@ export default function App() {
       {isCloudDatabaseOpen && (
         <CloudDatabaseModal
           onClose={() => setIsCloudDatabaseOpen(false)}
+          onDataReload={reloadData}
+        />
+      )}
+
+      {/* 14. Modal de Autenticação / Login / Cadastro individual */}
+      <AuthModal
+        isOpen={isAuthModalOpen || !currentUser}
+        canClose={currentUser !== null}
+        initialMode={authModalMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* 15. Modal de Perfil e Gerenciamento de Conta do Usuário */}
+      {isUserAccountModalOpen && (
+        <UserAccountModal
+          user={currentUser}
+          onClose={() => setIsUserAccountModalOpen(false)}
+          onOpenLogin={() => handleOpenLogin('login')}
+          onOpenRegister={() => handleOpenLogin('register')}
+          onLogout={handleLogout}
           onDataReload={reloadData}
         />
       )}

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { StorageService } from '../services/storage';
 import { FirebaseService, SyncStatus } from '../services/firebase';
+import { AuthService } from '../services/auth';
+import { User } from 'lucide-react';
 
 interface CloudDatabaseModalProps {
   onClose: () => void;
@@ -32,6 +34,7 @@ export const CloudDatabaseModal: React.FC<CloudDatabaseModalProps> = ({
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [verticalPosition, setVerticalPosition] = useState<'top' | 'center' | 'bottom'>('center');
   const [lastSync, setLastSync] = useState<Date | null>(FirebaseService.getLastSyncedAt());
+  const currentUser = AuthService.getCurrentUser();
 
   useEffect(() => {
     // Proactively test connection when opening modal
@@ -294,14 +297,20 @@ export const CloudDatabaseModal: React.FC<CloudDatabaseModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-          <span className="text-xs text-slate-500">
-            ID do Banco: <code className="bg-slate-200/80 px-1.5 py-0.5 rounded text-[11px] font-mono text-slate-800">ai-studio-contafcilappdeco...</code>
-          </span>
+        <div className="p-4 sm:px-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="text-xs text-slate-500 space-y-0.5 text-center sm:text-left">
+            <div>
+              Usuário: <strong className="text-slate-800">{currentUser ? currentUser.name : 'Loja Padrão'}</strong>
+              {currentUser && <span className="text-[11px] text-slate-400"> ({currentUser.email})</span>}
+            </div>
+            <div className="text-[11px]">
+              Partição Nuvem: <code className="bg-slate-200/80 px-1.5 py-0.5 rounded font-mono text-emerald-800">/stores/{currentUser ? currentUser.id : FirebaseService.getStoreId()}</code>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition cursor-pointer"
           >
             Entendido / Fechar
           </button>

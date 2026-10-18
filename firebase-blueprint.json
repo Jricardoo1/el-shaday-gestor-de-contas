@@ -1,5 +1,22 @@
 {
   "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "User login credentials, merchant profile, and store linkage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user identifier" },
+        "email": { "type": "string", "description": "User login email or username" },
+        "name": { "type": "string", "description": "User or merchant full name" },
+        "storeName": { "type": "string", "description": "Store or establishment name" },
+        "passwordHash": { "type": "string", "description": "Secure salted cryptographic hash of password" },
+        "phone": { "type": "string", "description": "WhatsApp contact phone" },
+        "role": { "type": "string", "description": "User role (merchant or admin)" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "lastLoginAt": { "type": "string", "description": "ISO timestamp of last login" }
+      },
+      "required": ["id", "email", "name", "passwordHash", "createdAt"]
+    },
     "StoreSettings": {
       "title": "StoreSettings",
       "description": "Store configuration, contact information and preferences",
@@ -73,6 +90,10 @@
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "User account login credentials and profile"
+    },
     "/stores/{storeId}": {
       "schema": { "$ref": "#/entities/StoreSettings" },
       "description": "Store preferences and profile document"

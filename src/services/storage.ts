@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { LicenseSecurity } from './licenseSecurity';
 import { FirebaseService } from './firebase';
+import { AuthService } from './auth';
 
 const STORAGE_KEYS = {
   CUSTOMERS: 'fiado_app_customers_v1',
@@ -363,10 +364,24 @@ const INITIAL_ADMIN_MERCHANTS: MerchantAdminRecord[] = [
   },
 ];
 
+// Helper: get storage key scoped to the logged-in user
+function getScopedKey(baseKey: string): string {
+  const activeUserId = AuthService.getActiveUserId();
+  if (activeUserId) {
+    return `${baseKey}_${activeUserId}`;
+  }
+  return baseKey;
+}
+
 // Helper: safe JSON load
 function load<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const scopedKey = getScopedKey(key);
+    let raw = localStorage.getItem(scopedKey);
+    // If scoped key is not set yet and active user is the primary demo user, fallback to base key
+    if (!raw && AuthService.getActiveUserId() === 'usr_demo_principal') {
+      raw = localStorage.getItem(key);
+    }
     if (!raw) return fallback;
     return JSON.parse(raw);
   } catch (err) {
@@ -378,7 +393,8 @@ function load<T>(key: string, fallback: T): T {
 // Helper: safe JSON save
 function save<T>(key: string, data: T): void {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const scopedKey = getScopedKey(key);
+    localStorage.setItem(scopedKey, JSON.stringify(data));
   } catch (err) {
     console.error(`Error saving key ${key}:`, err);
   }
@@ -402,7 +418,9 @@ export function calculateFiadoStatus(entry: FiadoEntry): 'pending' | 'partially_
 export const StorageService = {
   // Customers
   getCustomers(): Customer[] {
-    const list = load<Customer[]>(STORAGE_KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
+    const activeUserId = AuthService.getActiveUserId();
+    const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_CUSTOMERS;
+    const list = load<Customer[]>(STORAGE_KEYS.CUSTOMERS, fallback);
     return list;
   },
 
@@ -439,7 +457,9 @@ export const StorageService = {
 
   // Fiado Entries
   getFiadoEntries(): FiadoEntry[] {
-    const list = load<FiadoEntry[]>(STORAGE_KEYS.ENTRIES, INITIAL_ENTRIES);
+    const activeUserId = AuthService.getActiveUserId();
+    const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_ENTRIES;
+    const list = load<FiadoEntry[]>(STORAGE_KEYS.ENTRIES, fallback);
     return list.map((entry) => ({
       ...entry,
       status: calculateFiadoStatus(entry),
@@ -478,7 +498,9 @@ export const StorageService = {
 
   // Payments
   getPayments(): PaymentRecord[] {
-    return load<PaymentRecord[]>(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+    const activeUserId = AuthService.getActiveUserId();
+    const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_PAYMENTS;
+    return load<PaymentRecord[]>(STORAGE_KEYS.PAYMENTS, fallback);
   },
 
   addPayment(payment: PaymentRecord): {
@@ -600,9 +622,21 @@ export const StorageService = {
 
   // Store Settings
   getStoreSettings(): StoreSettings {
-    const settings = load<StoreSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS);
+    const user = AuthService.getCurrentUser();
+    let initialForUser = INITIAL_SETTINGS;
+    if (user && user.id !== 'usr_demo_principal') {
+      initialForUser = {
+        ...INITIAL_SETTINGS,
+        storeName: user.storeName || INITIAL_SETTINGS.storeName,
+        ownerName: user.name || INITIAL_SETTINGS.ownerName,
+        phone: user.phone || INITIAL_SETTINGS.phone,
+        city: user.city || INITIAL_SETTINGS.city,
+        deviceId: user.id,
+      };
+    }
+    const settings = load<StoreSettings>(STORAGE_KEYS.SETTINGS, initialForUser);
     if (!settings.deviceId) {
-      settings.deviceId = LicenseSecurity.getOrCreateDeviceId();
+      settings.deviceId = user?.id || LicenseSecurity.getOrCreateDeviceId();
     }
     if (!settings.products || settings.products.length === 0) {
       settings.products = DEFAULT_PRODUCTS;

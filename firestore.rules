@@ -16,9 +16,18 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // Stores collection partitioned by store ID
+    // User accounts collection (login, profile, credentials)
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if true;
+      allow create, update: if isValidId(userId);
+      allow delete: if isValidId(userId);
+    }
+
+    // Stores collection partitioned by user / store ID
     match /stores/{storeId} {
-      allow get, list: if isValidId(storeId);
+      allow get: if isValidId(storeId);
+      allow list: if true;
       allow create, update: if isValidId(storeId);
       allow delete: if isValidId(storeId);
 
