@@ -17,6 +17,8 @@ import {
   Wallet,
   FileSpreadsheet,
   FileText,
+  ArrowDownAZ,
+  ArrowUpZA,
 } from 'lucide-react';
 import { Customer, StoreSettings } from '../types';
 import { StorageService } from '../services/storage';
@@ -50,6 +52,9 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
   const [filter, setFilter] = useState<
     'all' | 'due_soon_3d' | 'empresas' | 'with_debt' | 'overdue' | 'settled' | 'with_credit'
   >('all');
+  const [sortOrder, setSortOrder] = useState<
+    'alpha_asc' | 'alpha_desc' | 'debt_desc' | 'debt_asc'
+  >('alpha_asc');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleExportCsv = (customer: Customer) => {
@@ -93,6 +98,27 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
     if (filter === 'with_credit') return debt.creditBalance > 0;
 
     return true;
+  });
+
+  // Sorting logic (Clientes sempre em ordem alfabética A-Z por padrão)
+  const sortedAndFilteredCustomers = [...filteredCustomers].sort((a, b) => {
+    if (sortOrder === 'alpha_asc') {
+      return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' });
+    }
+    if (sortOrder === 'alpha_desc') {
+      return (b.name || '').localeCompare(a.name || '', 'pt-BR', { sensitivity: 'base' });
+    }
+    if (sortOrder === 'debt_desc') {
+      const debtA = StorageService.getCustomerDebt(a.id).totalDebt;
+      const debtB = StorageService.getCustomerDebt(b.id).totalDebt;
+      return debtB - debtA;
+    }
+    if (sortOrder === 'debt_asc') {
+      const debtA = StorageService.getCustomerDebt(a.id).totalDebt;
+      const debtB = StorageService.getCustomerDebt(b.id).totalDebt;
+      return debtA - debtB;
+    }
+    return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' });
   });
 
   return (
@@ -145,6 +171,35 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
               </button>
             )}
           </div>
+
+          {/* Botão de Ordenação Alfabética A-Z / Z-A */}
+          <button
+            type="button"
+            onClick={() => setSortOrder((prev) => (prev === 'alpha_asc' ? 'alpha_desc' : 'alpha_asc'))}
+            title={`Ordem dos clientes: ${
+              sortOrder === 'alpha_asc'
+                ? 'Ordem Alfabética (A → Z) [Ativo]'
+                : 'Ordem Alfabética (Z → A) [Ativo]'
+            }. Clique para inverter a ordem.`}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2.5 rounded-xl border transition active:scale-95 cursor-pointer shrink-0 ${
+              sortOrder === 'alpha_asc' || sortOrder === 'alpha_desc'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs hover:bg-emerald-100'
+                : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            {sortOrder === 'alpha_desc' ? (
+              <ArrowUpZA className="w-4 h-4 text-emerald-700 shrink-0" />
+            ) : (
+              <ArrowDownAZ className="w-4 h-4 text-emerald-700 shrink-0" />
+            )}
+            <span className="hidden sm:inline">
+              {sortOrder === 'alpha_asc' ? 'Ordem A-Z' : 'Ordem Z-A'}
+            </span>
+            <span className="sm:hidden">
+              {sortOrder === 'alpha_asc' ? 'A-Z' : 'Z-A'}
+            </span>
+          </button>
+
           <button
             onClick={onNewCustomer}
             className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition active:scale-95 shrink-0"
@@ -159,7 +214,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
         {search && (
           <div className="flex items-center justify-between text-xs bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 animate-in fade-in">
             <span className="text-emerald-950 font-medium">
-              Filtrando clientes por: <strong className="font-bold text-emerald-800">"{search}"</strong> ({filteredCustomers.length} de {customers.length} cadastros)
+              Filtrando clientes por: <strong className="font-bold text-emerald-800">"{search}"</strong> ({sortedAndFilteredCustomers.length} de {customers.length} cadastros)
             </span>
             <button
               type="button"
@@ -170,6 +225,24 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
             </button>
           </div>
         )}
+
+        {/* Barra de Status e Ordenação Alfabética Ativa */}
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              <ArrowDownAZ className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Ordem Alfabética: {sortOrder === 'alpha_asc' ? 'A a Z' : 'Z a A'}</span>
+            </span>
+            {sortOrder === 'alpha_asc' && (
+              <span className="text-[11px] text-slate-400 hidden sm:inline">
+                (Clientes organizados por nome em ordem alfabética)
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] font-medium text-slate-400">
+            {sortedAndFilteredCustomers.length} {sortedAndFilteredCustomers.length === 1 ? 'cliente' : 'clientes'}
+          </span>
+        </div>
 
         {/* Filter Badges */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
@@ -264,7 +337,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
 
       {/* 3. Customer List */}
       <div className="space-y-2.5">
-        {filteredCustomers.length === 0 ? (
+        {sortedAndFilteredCustomers.length === 0 ? (
           <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 space-y-3">
             <Search className="w-12 h-12 mx-auto text-slate-300" />
             <p className="text-sm font-bold text-slate-700">
@@ -298,7 +371,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
             </div>
           </div>
         ) : (
-          filteredCustomers.map((customer) => {
+          sortedAndFilteredCustomers.map((customer, index) => {
             const debt = StorageService.getCustomerDebt(customer.id);
             const isOverdue = debt.overdueCount > 0;
             const hasDebt = debt.totalDebt > 0;
@@ -306,17 +379,39 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
             // Check if customer is maturing in the next 3 days
             const upcomingInfo = upcomingCustomers.find((u) => u.customer.id === customer.id);
 
+            // Letra inicial para agrupador visual alfabético
+            const firstChar = (customer.name || '').trim().charAt(0).toUpperCase();
+            const prevChar =
+              index > 0
+                ? (sortedAndFilteredCustomers[index - 1].name || '').trim().charAt(0).toUpperCase()
+                : null;
+            const showLetterHeader =
+              (sortOrder === 'alpha_asc' || sortOrder === 'alpha_desc') &&
+              !search &&
+              (index === 0 || firstChar !== prevChar);
+
             return (
-              <div
-                key={customer.id}
-                className={`bg-white rounded-2xl border p-4 shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                  upcomingInfo
-                    ? 'border-amber-300 bg-amber-50/20 ring-1 ring-amber-300/40'
-                    : isOverdue
-                    ? 'border-rose-200 hover:border-rose-300'
-                    : 'border-slate-200 hover:border-emerald-300'
-                }`}
-              >
+              <React.Fragment key={customer.id}>
+                {showLetterHeader && (
+                  <div className="flex items-center gap-2 pt-2.5 pb-0.5 px-1">
+                    <span className="w-7 h-7 rounded-lg bg-emerald-700 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                      {firstChar || '#'}
+                    </span>
+                    <span className="text-xs font-black text-slate-600 uppercase tracking-wider">
+                      Letra {firstChar}
+                    </span>
+                    <div className="h-px bg-slate-200 flex-1"></div>
+                  </div>
+                )}
+                <div
+                  className={`bg-white rounded-2xl border p-4 shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    upcomingInfo
+                      ? 'border-amber-300 bg-amber-50/20 ring-1 ring-amber-300/40'
+                      : isOverdue
+                      ? 'border-rose-200 hover:border-rose-300'
+                      : 'border-slate-200 hover:border-emerald-300'
+                  }`}
+                >
                 {/* Customer info */}
                 <div
                   onClick={() => onSelectCustomer(customer)}
@@ -517,8 +612,9 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                   </div>
                 </div>
               </div>
-            );
-          })
+            </React.Fragment>
+          );
+        })
         )}
       </div>
     </div>

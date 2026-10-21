@@ -31,6 +31,7 @@ import { CollectionSuggestionsModal } from './components/CollectionSuggestionsMo
 import { CloudDatabaseModal } from './components/CloudDatabaseModal';
 import { AuthModal } from './components/AuthModal';
 import { UserAccountModal } from './components/UserAccountModal';
+import { X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isUserAccountModalOpen, setIsUserAccountModalOpen] = useState(false);
+  const [isDemoBannerDismissed, setIsDemoBannerDismissed] = useState(false);
 
   // Main Data States loaded from StorageService (LocalStorage / Offline first)
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -341,7 +343,7 @@ export default function App() {
       />
 
       {/* Demo Account Alert / Call to Action Banner */}
-      {currentUser?.id === 'usr_demo_principal' && (
+      {!isDemoBannerDismissed && currentUser?.id === 'usr_demo_principal' && (
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 px-3 sm:px-4 py-2 text-xs font-bold shadow-xs border-b border-amber-600/30">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
@@ -366,6 +368,15 @@ export default function App() {
                 className="px-2.5 py-1 bg-white/90 hover:bg-white text-slate-950 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95 shadow-xs"
               >
                 Entrar com Outro Login
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDemoBannerDismissed(true)}
+                title="Fechar este aviso / Fechar a janela"
+                className="p-1 rounded-lg text-slate-950 hover:bg-black/15 transition cursor-pointer ml-0.5"
+                aria-label="Fechar"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
           </div>
@@ -651,8 +662,8 @@ export default function App() {
 
       {/* 14. Modal de Autenticação / Login / Cadastro individual */}
       <AuthModal
-        isOpen={isAuthModalOpen || !currentUser}
-        canClose={currentUser !== null}
+        isOpen={isAuthModalOpen}
+        canClose={true}
         initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}

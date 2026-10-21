@@ -35,29 +35,18 @@ export const DEFAULT_ADMIN_PIX: AdminPixConfig = {
   instructions: 'Chave PIX oficial do Administrador/Desenvolvedor do sistema. O pagamento das mensalidades das lojas é enviado diretamente para este PIX.',
 };
 
-// Default seed data for immediate high-fidelity testing
+// Default seed data for immediate high-fidelity testing (em ordem alfabética)
 const INITIAL_CUSTOMERS: Customer[] = [
   {
-    id: 'c1',
-    name: 'Sebastião Alves',
-    nickname: 'Tião da Oficina',
-    phone: '5511987654321',
-    address: 'Rua das Flores, 140 - Próximo ao posto',
-    creditLimit: 300,
-    notes: 'Costuma acertar todo dia 10 quando recebe os serviços da oficina.',
+    id: 'c4',
+    name: 'Cláudia Rocha Mendonça',
+    nickname: 'Dona Cacau',
+    phone: '5511981112233',
+    address: 'Rua São José, 405',
+    creditLimit: 400,
+    notes: 'Almoço da família.',
     customerType: 'individual',
-    createdAt: '2026-09-10T10:00:00Z',
-  },
-  {
-    id: 'c2',
-    name: 'Neide Aparecida Silva',
-    nickname: 'Dona Neide Costureira',
-    phone: '5511991234567',
-    address: 'Av. Brasil, 82 - Sobrado amarelo',
-    creditLimit: 200,
-    notes: 'Cliente muito pontual. Avisar antes por WhatsApp.',
-    customerType: 'individual',
-    createdAt: '2026-09-15T14:30:00Z',
+    createdAt: '2026-09-01T16:00:00Z',
   },
   {
     id: 'c3',
@@ -69,17 +58,6 @@ const INITIAL_CUSTOMERS: Customer[] = [
     notes: 'Paga sempre via PIX no fim do expediente.',
     customerType: 'individual',
     createdAt: '2026-09-20T08:15:00Z',
-  },
-  {
-    id: 'c4',
-    name: 'Cláudia Rocha Mendonça',
-    nickname: 'Dona Cacau',
-    phone: '5511981112233',
-    address: 'Rua São José, 405',
-    creditLimit: 400,
-    notes: 'Almoço da família.',
-    customerType: 'individual',
-    createdAt: '2026-09-01T16:00:00Z',
   },
   {
     id: 'c5',
@@ -95,6 +73,28 @@ const INITIAL_CUSTOMERS: Customer[] = [
     companyDiscountPerMarmita: 2.0, // R$ 2,00 de desconto por marmita
     billingCycle: 'monthly',
     createdAt: '2026-09-01T08:00:00Z',
+  },
+  {
+    id: 'c2',
+    name: 'Neide Aparecida Silva',
+    nickname: 'Dona Neide Costureira',
+    phone: '5511991234567',
+    address: 'Av. Brasil, 82 - Sobrado amarelo',
+    creditLimit: 200,
+    notes: 'Cliente muito pontual. Avisar antes por WhatsApp.',
+    customerType: 'individual',
+    createdAt: '2026-09-15T14:30:00Z',
+  },
+  {
+    id: 'c1',
+    name: 'Sebastião Alves',
+    nickname: 'Tião da Oficina',
+    phone: '5511987654321',
+    address: 'Rua das Flores, 140 - Próximo ao posto',
+    creditLimit: 300,
+    notes: 'Costuma acertar todo dia 10 quando recebe os serviços da oficina.',
+    customerType: 'individual',
+    createdAt: '2026-09-10T10:00:00Z',
   },
 ];
 
@@ -416,12 +416,14 @@ export function calculateFiadoStatus(entry: FiadoEntry): 'pending' | 'partially_
 }
 
 export const StorageService = {
-  // Customers
+  // Customers (sempre ordenados em ordem alfabética de A a Z)
   getCustomers(): Customer[] {
     const activeUserId = AuthService.getActiveUserId();
     const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_CUSTOMERS;
     const list = load<Customer[]>(STORAGE_KEYS.CUSTOMERS, fallback);
-    return list;
+    return [...list].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
   },
 
   saveCustomer(customer: Customer): Customer[] {
@@ -432,8 +434,11 @@ export const StorageService = {
       updated = [...list];
       updated[index] = customer;
     } else {
-      updated = [customer, ...list];
+      updated = [...list, customer];
     }
+    updated.sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
+    );
     save(STORAGE_KEYS.CUSTOMERS, updated);
     this.updateAdminSelfRecord();
     FirebaseService.saveCustomer(customer);

@@ -18,6 +18,13 @@ import {
   Database,
   Cloud,
   RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Trash2,
+  Search,
+  Tag,
+  Coffee,
 } from 'lucide-react';
 import { StoreSettings, ProductItem } from '../types';
 import { StorageService, DEFAULT_PRODUCTS } from '../services/storage';
@@ -38,6 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onDataReload,
   onOpenAdmin,
 }) => {
+  const [verticalPosition, setVerticalPosition] = useState<'top' | 'center' | 'bottom'>('center');
   const [storeName, setStoreName] = useState(settings.storeName || '');
   const [ownerName, setOwnerName] = useState(settings.ownerName || '');
   const [phone, setPhone] = useState(settings.phone || '');
@@ -53,6 +61,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [products, setProducts] = useState<ProductItem[]>(
     settings.products && settings.products.length > 0 ? settings.products : DEFAULT_PRODUCTS
   );
+
+  // Product manager filter and custom product creation states
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState<ProductItem['category']>('marmitex');
+  const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductDescription, setNewProductDescription] = useState('');
+  const [showResetProductsConfirm, setShowResetProductsConfirm] = useState(false);
+
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -99,11 +118,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handlePriceChange = (productId: string, newPriceStr: string) => {
     const val = parseFloat(newPriceStr.replace(',', '.'));
-    if (!isNaN(val)) {
+    if (!isNaN(val) && val >= 0) {
       setProducts((prev) =>
         prev.map((p) => (p.id === productId ? { ...p, price: val } : p))
       );
+    } else if (newPriceStr === '') {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, price: 0 } : p))
+      );
     }
+  };
+
+  const handleQuickPriceAdjust = (productId: string, delta: number) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === productId) {
+          const newPrice = Math.max(0, Math.round((p.price + delta) * 100) / 100);
+          return { ...p, price: newPrice };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleAddCustomProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = newProductName.trim();
+    if (!cleanName) return;
+    const priceVal = parseFloat(newProductPrice.replace(',', '.')) || 0;
+    const newProd: ProductItem = {
+      id: `p_custom_${Date.now()}`,
+      name: cleanName,
+      category: newProductCategory,
+      price: priceVal,
+      description: newProductDescription.trim() || undefined,
+    };
+    setProducts((prev) => [...prev, newProd]);
+    setNewProductName('');
+    setNewProductPrice('');
+    setNewProductDescription('');
+    setIsAddingProduct(false);
+  };
+
+  const handleRemoveProduct = (productId: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+  };
+
+  const handleResetDefaultProducts = () => {
+    setProducts(DEFAULT_PRODUCTS);
+    setShowResetProductsConfirm(false);
   };
 
   const handleExportBackup = () => {
@@ -158,23 +221,86 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
+  const positionClass =
+    verticalPosition === 'top'
+      ? 'items-start pt-3 sm:pt-6'
+      : verticalPosition === 'bottom'
+      ? 'items-end pb-3 sm:pb-6'
+      : 'items-center';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-emerald-900 px-6 py-4 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Store className="w-5 h-5 text-emerald-300" />
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className={`fixed inset-0 z-50 flex justify-center bg-black/65 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto transition-all duration-300 ${positionClass}`}
+    >
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
+        {/* Header com botões de posição e Fechar */}
+        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 px-5 sm:px-6 py-4 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-emerald-300 shadow-inner">
+              <Store className="w-5 h-5 text-emerald-200" />
+            </div>
             <div>
-              <h2 className="text-base font-bold">Configurações do Comércio</h2>
-              <p className="text-xs text-emerald-200">Dados da loja, chave PIX e backup manual</p>
+              <h2 className="text-base sm:text-lg font-black tracking-tight">Configurações do Comércio</h2>
+              <p className="text-xs text-emerald-200/90 mt-0.5">Cardápio, tabela de preços, chave PIX e backup</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-1.5">
+            {/* Controles de Subir/Descer Janela */}
+            <div className="hidden sm:flex items-center bg-black/25 rounded-xl p-0.5 border border-white/10 text-xs">
+              <button
+                type="button"
+                onClick={() => setVerticalPosition('top')}
+                title="Subir Janela para o Topo"
+                className={`p-1.5 rounded-lg transition ${
+                  verticalPosition === 'top'
+                    ? 'bg-white/20 text-white font-bold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <ArrowUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerticalPosition('center')}
+                title="Centralizar Janela"
+                className={`px-1.5 py-0.5 text-[10px] rounded-lg transition ${
+                  verticalPosition === 'center'
+                    ? 'bg-white/20 text-white font-bold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Centro
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerticalPosition('bottom')}
+                title="Descer Janela para a Base"
+                className={`p-1.5 rounded-lg transition ${
+                  verticalPosition === 'bottom'
+                    ? 'bg-white/20 text-white font-bold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <ArrowDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Botão de Fechar a Janela no Topo */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-white/80 hover:text-white px-2.5 py-1.5 rounded-xl hover:bg-white/15 transition flex items-center gap-1 text-xs font-bold cursor-pointer"
+              title="Fechar Janela"
+              aria-label="Fechar Janela"
+            >
+              <X className="w-5 h-5" />
+              <span className="hidden sm:inline">Fechar</span>
+            </button>
+          </div>
         </div>
 
         <div className="p-6 max-h-[82vh] overflow-y-auto space-y-6">
@@ -192,7 +318,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="settings-form" onSubmit={handleSubmit} className="space-y-4">
             {/* Nome da Loja */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -307,59 +433,331 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </p>
             </div>
 
-            {/* Preços de Venda Padrão */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
-                  <UtensilsCrossed className="w-4 h-4 text-emerald-700" />
-                  Preços Padrão do Cardápio
-                </span>
-                <span className="text-[11px] text-slate-500">Usado no toque rápido</span>
+            {/* Preços de Venda Padrão com Nomes Completos e Sem Cortes */}
+            <div className="bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
+                    <UtensilsCrossed className="w-4 h-4 text-emerald-700" />
+                    Tabela de Preços do Cardápio & Itens
+                  </span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Os nomes e detalhes de cada produto aparecem por completo abaixo para você saber exatamente qual item está configurando.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetProductsConfirm(true)}
+                    className="text-xs text-slate-600 hover:text-emerald-700 font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                    title="Restaurar preços originais do sistema"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Restaurar Preços Padrão</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-slate-700 block">🍱 Marmitex & Pratos:</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* Filtro por Categoria e Busca por Nome */}
+              <div className="space-y-2.5 pt-1">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Buscar produto por nome (ex: 1,5L, 2 Litros, sem gás, média, calabresa)..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2.5 text-xs rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+                  />
+                  {productSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Abas de Categorias */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setProductCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                      productCategoryFilter === 'all'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Todos os Produtos ({products.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductCategoryFilter('marmitex')}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                      productCategoryFilter === 'marmitex'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    🍱 Marmitex & Pratos ({products.filter((p) => p.category === 'marmitex').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductCategoryFilter('bebidas')}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                      productCategoryFilter === 'bebidas'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    🥤 Bebidas & Refrigerantes ({products.filter((p) => p.category === 'bebidas').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductCategoryFilter('porcoes')}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                      productCategoryFilter === 'porcoes'
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    🍟 Porções & Petiscos ({products.filter((p) => p.category === 'porcoes').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductCategoryFilter('sobremesas')}
+                    className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                      productCategoryFilter === 'sobremesas'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    🍮 Sobremesas & Doces ({products.filter((p) => p.category === 'sobremesas').length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid de Produtos com Nome Completo (SEM TRUNCATE) */}
+              {products.filter((p) => {
+                const matchesCat = productCategoryFilter === 'all' || p.category === productCategoryFilter;
+                const q = productSearch.toLowerCase().trim();
+                const matchesSearch =
+                  !q ||
+                  p.name.toLowerCase().includes(q) ||
+                  (p.description && p.description.toLowerCase().includes(q));
+                return matchesCat && matchesSearch;
+              }).length === 0 ? (
+                <div className="p-6 bg-white rounded-2xl border border-slate-200 text-center text-slate-500 space-y-1">
+                  <p className="text-xs font-bold text-slate-700">Nenhum produto encontrado</p>
+                  <p className="text-[11px]">Tente buscar por outro termo ou selecione a categoria "Todos".</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {products
-                    .filter((p) => p.category === 'marmitex')
+                    .filter((p) => {
+                      const matchesCat = productCategoryFilter === 'all' || p.category === productCategoryFilter;
+                      const q = productSearch.toLowerCase().trim();
+                      const matchesSearch =
+                        !q ||
+                        p.name.toLowerCase().includes(q) ||
+                        (p.description && p.description.toLowerCase().includes(q));
+                      return matchesCat && matchesSearch;
+                    })
                     .map((prod) => (
-                      <div key={prod.id} className="bg-white p-2.5 rounded-xl border border-slate-200">
-                        <span className="text-xs font-bold text-slate-800 block truncate">{prod.name}</span>
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-xs font-bold text-emerald-700">R$</span>
-                          <input
-                            type="number"
-                            step="0.50"
-                            value={prod.price}
-                            onChange={(e) => handlePriceChange(prod.id, e.target.value)}
-                            className="w-full text-xs font-bold p-1 rounded-md border border-slate-300 bg-slate-50"
-                          />
+                      <div
+                        key={prod.id}
+                        className="bg-white p-3.5 rounded-2xl border border-slate-200/90 hover:border-emerald-400 shadow-2xs hover:shadow-xs transition flex flex-col justify-between gap-2.5"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                              {prod.category === 'marmitex'
+                                ? 'Marmitex'
+                                : prod.category === 'bebidas'
+                                ? 'Bebida'
+                                : prod.category === 'porcoes'
+                                ? 'Porção'
+                                : prod.category === 'sobremesas'
+                                ? 'Sobremesa'
+                                : 'Outro'}
+                            </span>
+                            {prod.unit === 'kg' && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                                Por KG
+                              </span>
+                            )}
+                            {prod.id.startsWith('p_custom_') && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveProduct(prod.id)}
+                                title="Excluir este item personalizado"
+                                className="text-slate-400 hover:text-rose-600 p-1 rounded transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* NOME COMPLETO DO PRODUTO (SEM TRUNCATE) */}
+                          <h4 className="text-sm font-black text-slate-900 leading-snug whitespace-normal break-words">
+                            {prod.name}
+                          </h4>
+
+                          {/* Detalhes/Volume/Descrição */}
+                          {prod.description && (
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                              {prod.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Controle de Edição de Preço */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-600">Preço:</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPriceAdjust(prod.id, -0.5)}
+                              title="Diminuir R$ 0,50"
+                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition cursor-pointer active:scale-95"
+                            >
+                              -
+                            </button>
+                            <div className="relative flex items-center">
+                              <span className="absolute left-2.5 text-xs font-black text-emerald-800 pointer-events-none">
+                                R$
+                              </span>
+                              <input
+                                type="number"
+                                step="0.50"
+                                min="0"
+                                value={prod.price}
+                                onChange={(e) => handlePriceChange(prod.id, e.target.value)}
+                                className="w-24 pl-8 pr-2 py-1.5 text-sm font-black text-slate-900 bg-emerald-50/60 border border-emerald-300 rounded-xl text-right focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPriceAdjust(prod.id, 0.5)}
+                              title="Aumentar R$ 0,50"
+                              className="w-7 h-7 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-black text-xs flex items-center justify-center transition cursor-pointer active:scale-95"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
                 </div>
+              )}
 
-                <span className="text-[11px] font-bold text-slate-700 block pt-1">🥤 Bebidas:</span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {products
-                    .filter((p) => p.category === 'bebidas')
-                    .map((prod) => (
-                      <div key={prod.id} className="bg-white p-2.5 rounded-xl border border-slate-200">
-                        <span className="text-[11px] font-bold text-slate-800 block truncate">{prod.name}</span>
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-xs font-bold text-emerald-700">R$</span>
-                          <input
-                            type="number"
-                            step="0.50"
-                            value={prod.price}
-                            onChange={(e) => handlePriceChange(prod.id, e.target.value)}
-                            className="w-full text-xs font-bold p-1 rounded-md border border-slate-300 bg-slate-50"
-                          />
-                        </div>
-                      </div>
-                    ))}
+              {/* Botão e Formulário para Adicionar Item Personalizado */}
+              {!isAddingProduct ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingProduct(true)}
+                  className="w-full py-2.5 px-3 rounded-xl border border-dashed border-emerald-400 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                  <Plus className="w-4 h-4 text-emerald-700" />
+                  <span>+ Adicionar Outro Produto / Bebida no Cardápio</span>
+                </button>
+              ) : (
+                <div className="p-4 bg-white rounded-2xl border-2 border-emerald-300 shadow-xs space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-emerald-700" />
+                      Cadastrar Novo Produto no Cardápio
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingProduct(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Nome Completo do Produto *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Coca-Cola 2 Litros ou Suco Natural 500ml"
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Categoria
+                      </label>
+                      <select
+                        value={newProductCategory}
+                        onChange={(e) => setNewProductCategory(e.target.value as any)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium"
+                      >
+                        <option value="marmitex">🍱 Marmitex & Prato</option>
+                        <option value="bebidas">🥤 Bebida & Refrigerante</option>
+                        <option value="porcoes">🍟 Porção & Petisco</option>
+                        <option value="sobremesas">🍮 Sobremesa & Doce</option>
+                        <option value="outros">Outro Item</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Preço Padrão (R$) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.50"
+                        placeholder="Ex: 12.00"
+                        value={newProductPrice}
+                        onChange={(e) => setNewProductPrice(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Detalhes / Tamanho / Volume (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Garrafa 2L gelada ou Copo 500ml"
+                        value={newProductDescription}
+                        onChange={(e) => setNewProductDescription(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingProduct(false)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddCustomProduct}
+                      disabled={!newProductName.trim()}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition"
+                    >
+                      Salvar Produto no Cardápio
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* SEÇÃO: BANCO DE DADOS GRATUITO NA NUVEM (FIRESTORE) */}
@@ -464,13 +862,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-1.5"
-            >
-              <Check className="w-4 h-4" />
-              Salvar Todas as Configurações
-            </button>
+            {/* Botões de Ação do Formulário: Fechar Janela e Salvar */}
+            <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl border-2 border-slate-300 hover:bg-slate-100 hover:border-slate-400 text-slate-700 font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-95"
+              >
+                <X className="w-4 h-4 text-slate-500" />
+                Fechar Janela
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:flex-1 py-3 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                Salvar Todas as Configurações
+              </button>
+            </div>
           </form>
 
           {/* Área do Dono do Sistema / SaaS */}
@@ -524,6 +933,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         isDestructive={false}
         onConfirm={handleExecuteResetDemo}
         onCancel={() => setShowResetConfirm(false)}
+      />
+
+      {/* Modal de Confirmação para Restaurar Preços Padrão */}
+      <ConfirmModal
+        isOpen={showResetProductsConfirm}
+        title="Restaurar Tabela Padrão de Preços"
+        message="Deseja realmente restaurar os preços para a tabela padrão original (marmitex, bebidas e adicionais)? As alterações manuais de preço serão redefinidas."
+        confirmLabel="Sim, Restaurar Preços Padrão"
+        isDestructive={false}
+        onConfirm={handleResetDefaultProducts}
+        onCancel={() => setShowResetProductsConfirm(false)}
       />
     </div>
   );
