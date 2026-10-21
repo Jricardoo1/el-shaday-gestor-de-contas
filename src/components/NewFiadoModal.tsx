@@ -58,6 +58,7 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
   const [showKgModal, setShowKgModal] = useState(false);
   const [kgDirectMoney, setKgDirectMoney] = useState('');
   const [kgGrams, setKgGrams] = useState('');
+  const [customKgRate, setCustomKgRate] = useState('');
   const [kgExtraItems, setKgExtraItems] = useState<Array<{ name: string; price: number }>>([]);
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
@@ -192,14 +193,16 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
     let mealPrice = 0;
     let label = 'Almoço no KG';
 
+    const activeKgRate =
+      parseFloat(customKgRate.replace(',', '.')) || (kgProduct ? kgProduct.price : 59.90);
+
     if (kgDirectMoney) {
       mealPrice = parseFloat(kgDirectMoney.replace(',', '.'));
       label = `Almoço no KG (R$ ${mealPrice.toFixed(2)})`;
     } else if (kgGrams) {
       const g = parseFloat(kgGrams.replace(',', '.'));
-      const kgPrice = kgProduct ? kgProduct.price : 59.90;
-      mealPrice = (g / 1000) * kgPrice;
-      label = `Almoço no KG (${g}g a R$ ${kgPrice.toFixed(2)}/kg = R$ ${mealPrice.toFixed(2)})`;
+      mealPrice = (g / 1000) * activeKgRate;
+      label = `Almoço no KG (${g}g a R$ ${activeKgRate.toFixed(2)}/kg = R$ ${mealPrice.toFixed(2)})`;
     }
 
     if (mealPrice > 0) {
@@ -573,18 +576,35 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
             {/* Modal / Card para inserção de KG */}
             {showKgModal && (
               <div className="p-3 bg-white rounded-xl border-2 border-amber-400 shadow-md space-y-2 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pb-1 border-b border-amber-200">
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Scale className="w-4 h-4 text-amber-600" />
-                    Lançar Almoço no KG (R$ {(kgProduct?.price || 59.9).toFixed(2)}/kg)
+                    Lançar Almoço no KG
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowKgModal(false)}
-                    className="text-slate-400 hover:text-slate-600 p-0.5"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-slate-600">Preço do KG:</span>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-1.5 text-[10px] font-black text-amber-800 pointer-events-none">
+                        R$
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder={(kgProduct?.price || 59.9).toFixed(2)}
+                        value={customKgRate !== '' ? customKgRate : (kgProduct?.price || 59.9).toFixed(2)}
+                        onChange={(e) => setCustomKgRate(e.target.value)}
+                        className="w-20 pl-6 pr-1.5 py-0.5 text-xs font-black text-amber-950 bg-amber-50 border border-amber-300 rounded-lg text-right focus:outline-hidden focus:ring-1 focus:ring-amber-500 font-mono"
+                        title="Preço livre do quilo (R$/KG)"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowKgModal(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
@@ -597,8 +617,8 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                         R$
                       </span>
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="Ex: 24,50"
                         value={kgDirectMoney}
                         onChange={(e) => {
@@ -616,7 +636,8 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                     </label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="Ex: 450 (gramas)"
                         value={kgGrams}
                         onChange={(e) => {

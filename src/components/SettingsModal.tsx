@@ -72,6 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newProductDescription, setNewProductDescription] = useState('');
   const [showResetProductsConfirm, setShowResetProductsConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<ProductItem | null>(null);
+  const [rawPriceMap, setRawPriceMap] = useState<Record<string, string>>({});
 
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -118,12 +119,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handlePriceChange = (productId: string, newPriceStr: string) => {
-    const val = parseFloat(newPriceStr.replace(',', '.'));
+    // Permite digitar qualquer valor livremente (ex: 59,90, 62.40, 75, etc.)
+    setRawPriceMap((prev) => ({ ...prev, [productId]: newPriceStr }));
+    const cleanStr = newPriceStr.trim().replace(',', '.');
+    const val = parseFloat(cleanStr);
     if (!isNaN(val) && val >= 0) {
       setProducts((prev) =>
         prev.map((p) => (p.id === productId ? { ...p, price: val } : p))
       );
-    } else if (newPriceStr === '') {
+    } else if (newPriceStr.trim() === '') {
       setProducts((prev) =>
         prev.map((p) => (p.id === productId ? { ...p, price: 0 } : p))
       );
@@ -135,6 +139,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       prev.map((p) => {
         if (p.id === productId) {
           const newPrice = Math.max(0, Math.round((p.price + delta) * 100) / 100);
+          setRawPriceMap((prevMap) => ({ ...prevMap, [productId]: newPrice.toFixed(2) }));
           return { ...p, price: newPrice };
         }
         return p;
@@ -176,6 +181,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleResetDefaultProducts = () => {
     setProducts(DEFAULT_PRODUCTS);
+    setRawPriceMap({});
     setShowResetProductsConfirm(false);
   };
 
@@ -628,7 +634,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {/* Controle de Edição de Preço */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold text-slate-600">Preço:</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-bold text-slate-600">Preço:</span>
+                            {prod.unit === 'kg' && (
+                              <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                                R$ por KG
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
@@ -643,12 +656,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 R$
                               </span>
                               <input
-                                type="number"
-                                step="0.50"
-                                min="0"
-                                value={prod.price}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0,00"
+                                value={
+                                  rawPriceMap[prod.id] !== undefined
+                                    ? rawPriceMap[prod.id]
+                                    : prod.price === 0
+                                    ? ''
+                                    : prod.price.toString()
+                                }
                                 onChange={(e) => handlePriceChange(prod.id, e.target.value)}
-                                className="w-24 pl-8 pr-2 py-1.5 text-sm font-black text-slate-900 bg-emerald-50/60 border border-emerald-300 rounded-xl text-right focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono"
+                                className="w-28 pl-8 pr-2 py-1.5 text-sm font-black text-slate-900 bg-emerald-50/60 border border-emerald-300 rounded-xl text-right focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono shadow-2xs"
                               />
                             </div>
                             <button
@@ -728,9 +747,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         Preço Padrão (R$) *
                       </label>
                       <input
-                        type="number"
-                        step="0.50"
-                        placeholder="Ex: 12.00"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Ex: 12,50 ou 59,90"
                         value={newProductPrice}
                         onChange={(e) => setNewProductPrice(e.target.value)}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-bold"
