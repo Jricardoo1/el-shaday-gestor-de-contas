@@ -237,11 +237,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       return (
         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl text-xs space-y-1 border border-slate-700 font-sans">
           <p className="font-bold text-slate-300 border-b border-slate-800 pb-1">{label}</p>
-          <p className="text-emerald-400 font-black flex items-center justify-between gap-4">
+          <p className="text-rose-400 font-black flex items-center justify-between gap-4">
             <span>Vendas / Fiados:</span>
             <span>R$ {Number(payload[0]?.value || 0).toFixed(2)}</span>
           </p>
-          <p className="text-amber-400 font-black flex items-center justify-between gap-4">
+          <p className="text-emerald-400 font-black flex items-center justify-between gap-4">
             <span>Recebido no Caixa:</span>
             <span>R$ {Number(payload[1]?.value || 0).toFixed(2)}</span>
           </p>
@@ -436,13 +436,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
           <div>
             <span className="text-slate-500 block font-medium">Vendas no Período:</span>
-            <span className="text-sm sm:text-base font-black text-emerald-700">
+            <span className="text-sm sm:text-base font-black text-rose-600">
               R$ {totalVendasPeriodo.toFixed(2)}
             </span>
           </div>
           <div>
             <span className="text-slate-500 block font-medium">Recebido no Caixa:</span>
-            <span className="text-sm sm:text-base font-black text-amber-600">
+            <span className="text-sm sm:text-base font-black text-emerald-600">
               R$ {totalRecebidosPeriodo.toFixed(2)}
             </span>
           </div>
@@ -493,14 +493,14 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
               <Bar
                 dataKey="vendas"
                 name="vendas"
-                fill="#059669"
+                fill="#dc2626"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
               />
               <Bar
                 dataKey="recebidos"
                 name="recebidos"
-                fill="#f59e0b"
+                fill="#16a34a"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
               />

@@ -71,6 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductDescription, setNewProductDescription] = useState('');
   const [showResetProductsConfirm, setShowResetProductsConfirm] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<ProductItem | null>(null);
 
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -162,6 +163,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleRemoveProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+  };
+
+  const handleConfirmDeleteProduct = () => {
+    if (productToDelete) {
+      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
+      setMessage(`Item "${productToDelete.name}" excluído do cardápio! Lembre-se de salvar as alterações.`);
+      setTimeout(() => setMessage(''), 3500);
+      setProductToDelete(null);
+    }
   };
 
   const handleResetDefaultProducts = () => {
@@ -584,21 +594,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 ? 'Sobremesa'
                                 : 'Outro'}
                             </span>
-                            {prod.unit === 'kg' && (
-                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                                Por KG
-                              </span>
-                            )}
-                            {prod.id.startsWith('p_custom_') && (
+                            <div className="flex items-center gap-1.5">
+                              {prod.unit === 'kg' && (
+                                <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                                  Por KG
+                                </span>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => handleRemoveProduct(prod.id)}
-                                title="Excluir este item personalizado"
-                                className="text-slate-400 hover:text-rose-600 p-1 rounded transition cursor-pointer"
+                                onClick={() => setProductToDelete(prod)}
+                                title={`Excluir "${prod.name}" do cardápio`}
+                                aria-label={`Excluir ${prod.name}`}
+                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition cursor-pointer active:scale-95 flex items-center gap-1 border border-transparent hover:border-rose-200"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                <span className="text-[10px] font-black text-rose-600">Excluir</span>
                               </button>
-                            )}
+                            </div>
                           </div>
 
                           {/* NOME COMPLETO DO PRODUTO (SEM TRUNCATE) */}
@@ -944,6 +956,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         isDestructive={false}
         onConfirm={handleResetDefaultProducts}
         onCancel={() => setShowResetProductsConfirm(false)}
+      />
+
+      {/* Modal de Confirmação para Excluir Item do Cardápio */}
+      <ConfirmModal
+        isOpen={!!productToDelete}
+        title="Excluir Item do Cardápio"
+        message={`Deseja realmente excluir "${productToDelete?.name}" do cardápio? Este item deixará de aparecer para lançamento de pedidos e fiados.`}
+        confirmLabel="Sim, Excluir Item"
+        isDestructive={true}
+        onConfirm={handleConfirmDeleteProduct}
+        onCancel={() => setProductToDelete(null)}
       />
     </div>
   );
