@@ -13,6 +13,7 @@ import {
   FileText,
   RotateCcw,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { Customer, FiadoEntry, ProductItem } from '../types';
 import { StorageService } from '../services/storage';
@@ -24,6 +25,7 @@ interface EditFiadoModalProps {
   products?: ProductItem[];
   onClose: () => void;
   onSave: (updatedEntry: FiadoEntry) => void;
+  onDelete?: (entryId: string) => void;
 }
 
 export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
@@ -32,6 +34,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
   products = StorageService.getStoreSettings().products || [],
   onClose,
   onSave,
+  onDelete,
 }) => {
   const [activeTab, setActiveTab] = useState<'itens' | 'desconto' | 'datas'>('itens');
 
@@ -667,18 +670,32 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
 
         {/* Footer Actions */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="py-2.5 px-5 rounded-xl bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition"
-          >
-            Cancelar
-          </button>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(entry.id)}
+                className="py-2.5 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title="Excluir este lançamento de marmitex permanentemente"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span className="hidden sm:inline">Excluir Marmitex</span>
+                <span className="sm:hidden">Excluir</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2.5 px-4 rounded-xl bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
 
           <button
             type="button"
             onClick={handleSave}
-            className="py-2.5 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black flex items-center gap-2 transition shadow-md active:scale-95"
+            className="py-2.5 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black flex items-center gap-2 transition shadow-md active:scale-95 cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>Salvar Alterações</span>

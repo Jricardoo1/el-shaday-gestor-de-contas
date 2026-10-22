@@ -97,6 +97,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   // In-app delete confirmation states (replaces window.confirm)
   const [confirmDeleteCustomer, setConfirmDeleteCustomer] = useState(false);
   const [entryToDeleteId, setEntryToDeleteId] = useState<string | null>(null);
+  const entryToDelete = entryToDeleteId ? debtInfo.entries.find((e) => e.id === entryToDeleteId) : null;
 
   // Breakdown by item modal state
   const [showBreakdownModal, setShowBreakdownModal] = useState(false);
@@ -841,17 +842,32 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                           )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEntryToEdit(entry);
-                          }}
-                          title="Entrar e editar itens, valor, dia ou aplicar desconto"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-900 border border-slate-200 transition"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEntryToEdit(entry);
+                            }}
+                            title="Editar lançamento de marmitex"
+                            aria-label="Editar lançamento de marmitex"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-900 border border-slate-200 transition cursor-pointer active:scale-95"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEntryToDeleteId(entry.id);
+                            }}
+                            title="Excluir este lançamento de marmitex"
+                            aria-label="Excluir lançamento de marmitex"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700 border border-slate-200 transition cursor-pointer active:scale-95"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1215,15 +1231,45 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         onCancel={() => setConfirmDeleteCustomer(false)}
       />
 
-      {/* Modal de Confirmação para Excluir Lançamento de Marmita */}
+      {/* Modal de Confirmação para Excluir Lançamento de Marmitex */}
       <ConfirmModal
         isOpen={!!entryToDeleteId}
-        title="Excluir Lançamento"
-        message="Tem certeza que deseja apagar este lançamento de marmitex? O saldo da conta será recalculado imediatamente."
-        confirmLabel="Sim, Excluir"
+        title="Excluir Lançamento de Marmitex"
+        message={
+          entryToDelete
+            ? `Tem certeza que deseja excluir o lançamento de "${entryToDelete.description || 'Marmitex'}" do dia ${entryToDelete.date ? entryToDelete.date.split('-').reverse().join('/') : ''} no valor de R$ ${entryToDelete.amount.toFixed(2)}? O saldo da conta será recalculado imediatamente.`
+            : 'Tem certeza que deseja apagar este lançamento de marmitex? O saldo da conta será recalculado imediatamente.'
+        }
+        confirmLabel="Sim, Excluir Marmitex"
         onConfirm={handleExecuteDeleteEntry}
         onCancel={() => setEntryToDeleteId(null)}
       />
+
+      {/* Modal de Edição de Lançamento / Marmitex */}
+      {entryToEdit && (
+        <EditFiadoModal
+          entry={entryToEdit}
+          customer={customer}
+          products={settings.products || []}
+          onClose={() => setEntryToEdit(null)}
+          onSave={handleSaveEditedEntry}
+          onDelete={(id) => {
+            setEntryToEdit(null);
+            setEntryToDeleteId(id);
+          }}
+        />
+      )}
+
+      {/* Modal de Detalhamento Consolidado do Mês (Breakdown por Item) */}
+      {showBreakdownModal && (
+        <MonthlyBreakdownModal
+          customer={customer}
+          settings={settings}
+          entries={entriesForBreakdown}
+          periodLabel={formatMonthLabel(selectedMonth)}
+          onClose={() => setShowBreakdownModal(false)}
+        />
+      )}
     </div>
   );
 };
