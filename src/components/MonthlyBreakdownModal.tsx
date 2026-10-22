@@ -3,14 +3,9 @@ import {
   X,
   FileText,
   Send,
-  Printer,
-  ShoppingBag,
   CheckCircle2,
   Calendar,
-  UtensilsCrossed,
-  CupSoda,
   PackageCheck,
-  Check,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings } from '../types';
 import {
@@ -84,7 +79,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">Extrato de Fechamento por Itens</h3>
+                <h3 className="text-base font-bold text-white">Extrato de Fechamento</h3>
                 <span className="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded-full font-bold">
                   {periodLabel}
                 </span>
@@ -164,68 +159,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Detailed Breakdown by Item */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <UtensilsCrossed className="w-4 h-4 text-emerald-700" />
-                Quantitativo por Produto / Item Consumido
-              </h4>
-              <span className="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                {breakdown.items.length} produto(s) diferente(s)
-              </span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {breakdown.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/80 px-2 rounded-xl transition"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        item.category === 'marmitex'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : item.category === 'bebidas'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {item.category === 'marmitex' ? (
-                        <UtensilsCrossed className="w-4 h-4" />
-                      ) : (
-                        <CupSoda className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-xs font-bold text-slate-900 block truncate">
-                        {item.name}
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        {item.category === 'marmitex'
-                          ? 'Marmitex / Refeição'
-                          : item.category === 'bebidas'
-                          ? 'Bebida / Refresco'
-                          : 'Item diverso'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span className="font-mono text-xs font-black bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg">
-                      {item.quantity}x
-                    </span>
-                    <span className="text-xs font-black text-slate-900 min-w-[70px] text-right">
-                      R$ {item.totalEstimatedAmount.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. Chronological Day-by-Day Purchases */}
+          {/* 2. Chronological Day-by-Day Purchases */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -234,7 +168,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
               </h4>
             </div>
 
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {sortedEntries.map((e) => (
                 <div
                   key={e.id}

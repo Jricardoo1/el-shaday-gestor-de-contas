@@ -721,11 +721,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   type="button"
                   onClick={() => setShowBreakdownModal(true)}
                   disabled={monthEntries.length === 0}
-                  title="Conferir quantas marmitex, bebidas e produtos foram consumidos no período"
+                  title="Conferir resumo e espelho de compras deste período para emitir PDF"
                   className="py-1 px-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition disabled:opacity-50 flex items-center gap-1 shadow-2xs"
                 >
                   <PackageCheck className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Extrato por Item</span>
+                  <span>Extrato de Fechamento</span>
                 </button>
                 <button
                   type="button"

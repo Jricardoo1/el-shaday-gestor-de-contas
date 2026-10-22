@@ -319,65 +319,11 @@ export const MonthlyClosingBreakdownService = {
 
     currentY += 24;
 
-    // 4. Table 1: Extrato Consolidado por Item (Quantos de cada)
+    // 4. Extrato Cronológico de Compras e Datas
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...darkSlate);
-    doc.text('1. Resumo Quantitativo por Produto / Item Consumido', 14, currentY);
-    currentY += 3;
-
-    const itemsTableRows = breakdown.items.map((item) => {
-      const catLabel =
-        item.category === 'marmitex' ? 'Marmitex / Almoço' : item.category === 'bebidas' ? 'Bebida / Refresco' : 'Outros';
-      return [
-        item.name,
-        catLabel,
-        `${item.quantity} un.`,
-        `R$ ${item.totalEstimatedAmount.toFixed(2)}`,
-      ];
-    });
-
-    if (itemsTableRows.length === 0) {
-      itemsTableRows.push(['Nenhum item discriminado', '-', '0', 'R$ 0,00']);
-    }
-
-    autoTable(doc, {
-      startY: currentY,
-      head: [['Produto / Discriminação', 'Categoria', 'Quantidade Total', 'Subtotal Estimado']],
-      body: itemsTableRows,
-      margin: { left: 14, right: 14 },
-      headStyles: {
-        fillColor: primaryColor,
-        textColor: 255,
-        fontStyle: 'bold',
-        fontSize: 8,
-      },
-      bodyStyles: {
-        fontSize: 7.5,
-        textColor: darkSlate,
-      },
-      columnStyles: {
-        0: { cellWidth: 'auto', fontStyle: 'bold' },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 32, halign: 'center', fontStyle: 'bold' },
-        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
-      },
-    });
-
-    // @ts-expect-error autoTable adds lastAutoTable
-    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : currentY + 35;
-
-    // Check if new page is needed for chronological list
-    if (currentY > 210) {
-      doc.addPage();
-      currentY = 15;
-    }
-
-    // 5. Table 2: Extrato Detalhado Dia a Dia (Datas e Compras)
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...darkSlate);
-    doc.text(`2. Extrato Cronológico de Compras e Datas (${entries.length} lançamentos)`, 14, currentY);
+    doc.text(`Extrato Cronológico de Compras e Datas (${entries.length} lançamentos)`, 14, currentY);
     currentY += 3;
 
     // Sort entries chronologically
@@ -496,16 +442,7 @@ export const MonthlyClosingBreakdownService = {
     let msg = `🍽️ *${settings.storeName || 'ESTABELECIMENTO'}* - Fechamento de Conta\n\n`;
     msg += `${greeting} Segue o seu *extrato de fechamento* referente a *${periodLabel}* para simples conferência:\n\n`;
 
-    msg += `📦 *QUANTITATIVO DE PRODUTOS CONSUMIDOS:*\n`;
-    if (breakdown.items.length > 0) {
-      breakdown.items.forEach((item) => {
-        msg += `• *${item.quantity}x* ${item.name} (~R$ ${item.totalEstimatedAmount.toFixed(2)})\n`;
-      });
-    } else {
-      msg += `• Consumos do período\n`;
-    }
-
-    msg += `\n📊 *RESUMO GERAL:*\n`;
+    msg += `📊 *RESUMO GERAL:*\n`;
     msg += `🍲 Total de Marmitex: *${breakdown.categoryTotals.marmitex} un.*\n`;
     if (breakdown.categoryTotals.bebidas > 0) {
       msg += `🥤 Total de Bebidas: *${breakdown.categoryTotals.bebidas} un.*\n`;
