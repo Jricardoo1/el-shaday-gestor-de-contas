@@ -32,7 +32,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatDateWithWeekday } from '../services/storage';
 import { CustomerPdfGenerator } from '../services/customerPdfGenerator';
 import { CustomerExportService } from '../services/customerExportService';
 import { ConfirmModal } from './ConfirmModal';
@@ -790,7 +790,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-black text-slate-900">
-                              {new Date(entry.date + 'T12:00:00').toLocaleDateString('pt-BR')}
+                              {formatDateWithWeekday(entry.date)}
                             </span>
                             {isPaid && (
                               <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-md font-bold uppercase">

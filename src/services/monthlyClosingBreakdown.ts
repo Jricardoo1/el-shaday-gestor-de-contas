@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Customer, FiadoEntry, ProductItem, StoreSettings } from '../types';
+import { formatDateWithWeekday } from './storage';
 
 export interface ParsedItemSummary {
   name: string;
@@ -330,7 +331,7 @@ export const MonthlyClosingBreakdownService = {
     const sortedEntries = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     const datesRows = sortedEntries.map((e) => {
-      const dateFormatted = e.date ? new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      const dateFormatted = e.date ? formatDateWithWeekday(e.date) : '-';
       const statusLabel = e.status === 'paid' ? 'QUITADO' : 'EM ABERTO';
       return [
         dateFormatted,
@@ -342,11 +343,11 @@ export const MonthlyClosingBreakdownService = {
 
     autoTable(doc, {
       startY: currentY,
-      head: [['Data', 'Discriminação do Consumo / Marmitex', 'Situação', 'Valor']],
+      head: [['Data / Dia da Semana', 'Discriminação do Consumo / Marmitex', 'Situação', 'Valor']],
       body: datesRows,
       margin: { left: 14, right: 14 },
       headStyles: {
-        fillColor: [30, 41, 59], // Slate 800
+        fillColor: primaryColor,
         textColor: 255,
         fontStyle: 'bold',
         fontSize: 8,
@@ -356,7 +357,7 @@ export const MonthlyClosingBreakdownService = {
         textColor: darkSlate,
       },
       columnStyles: {
-        0: { cellWidth: 24, fontStyle: 'bold' },
+        0: { cellWidth: 38, fontStyle: 'bold' },
         1: { cellWidth: 'auto' },
         2: { cellWidth: 26, halign: 'center', fontStyle: 'bold' },
         3: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
@@ -453,7 +454,7 @@ export const MonthlyClosingBreakdownService = {
     msg += `📅 *DATAS DOS CONSUMOS:*\n`;
     const sorted = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     sorted.slice(0, 15).forEach((e) => {
-      const dt = e.date ? new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+      const dt = e.date ? formatDateWithWeekday(e.date) : '-';
       msg += `- ${dt}: ${e.description} (R$ ${e.amount.toFixed(2)})\n`;
     });
 

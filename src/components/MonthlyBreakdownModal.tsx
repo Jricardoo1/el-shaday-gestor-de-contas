@@ -8,6 +8,7 @@ import {
   PackageCheck,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings } from '../types';
+import { formatDateWithWeekday } from '../services/storage';
 import {
   MonthlyClosingBreakdownService,
   ClosingBreakdownData,
@@ -175,8 +176,8 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
                   className="p-2.5 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 shrink-0">
-                      {new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    <span className="font-mono font-bold text-slate-800 bg-white px-2.5 py-1 rounded-md border border-slate-200 shrink-0 shadow-2xs">
+                      {formatDateWithWeekday(e.date)}
                     </span>
                     <span className="text-slate-800 truncate">{e.description}</span>
                   </div>

@@ -105,6 +105,33 @@ export function getRelativeDateString(daysOffset = 0): string {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Formats a date string (YYYY-MM-DD) with the day of the week in Portuguese.
+ * Example: '2026-10-22' -> '22/10 Quinta-Feira'
+ */
+export function formatDateWithWeekday(dateStr?: string, includeYear = false): string {
+  if (!dateStr) return '-';
+  const clean = dateStr.slice(0, 10);
+  const parts = clean.split('-');
+  if (parts.length < 3) return dateStr;
+  const [year, month, day] = parts;
+  const dateObj = new Date(`${clean}T12:00:00`);
+  const weekdays = [
+    'Domingo',
+    'Segunda-Feira',
+    'Terça-Feira',
+    'Quarta-Feira',
+    'Quinta-Feira',
+    'Sexta-Feira',
+    'Sábado',
+  ];
+  const weekday = weekdays[dateObj.getDay()] || '';
+  if (includeYear) {
+    return `${day}/${month}/${year} ${weekday}`;
+  }
+  return `${day}/${month} ${weekday}`;
+}
+
 export const DEFAULT_PRODUCTS: ProductItem[] = [
   // Marmitex, Pratos e Peso no KG
   { id: 'p_marmita_p', name: 'Marmitex Pequena', category: 'marmitex', price: 16.0, description: 'Porção individual ideal' },
