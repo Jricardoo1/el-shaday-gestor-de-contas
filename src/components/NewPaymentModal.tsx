@@ -22,7 +22,7 @@ export const NewPaymentModal: React.FC<NewPaymentModalProps> = ({
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'pix' | 'cash' | 'card_debit' | 'card_credit' | 'other'>('cash');
   const [notes, setNotes] = useState('');
-  const [sendWhatsApp, setSendWhatsApp] = useState(true);
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
   const [error, setError] = useState('');
 
   const debtInfo = customerId ? StorageService.getCustomerDebt(customerId) : null;

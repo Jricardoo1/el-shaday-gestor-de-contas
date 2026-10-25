@@ -54,9 +54,9 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   const [customPrices, setCustomPrices] = useState<{ [productId: string]: number }>(
     customer?.customPrices || {}
   );
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'biweekly' | 'weekly' | 'custom'>(
-    customer?.billingCycle || 'monthly'
-  );
+  const [billingCycle, setBillingCycle] = useState<
+    'day_5' | 'monthly' | 'biweekly' | 'weekly' | 'custom'
+  >(customer?.billingCycle || 'day_5');
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -122,7 +122,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         customerType === 'empresa' && companyDiscountType === 'custom_table'
           ? customPrices
           : undefined,
-      billingCycle: customerType === 'empresa' ? billingCycle : undefined,
+      billingCycle,
     };
 
     onSave(payload);
@@ -339,7 +339,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   onChange={(e) => setBillingCycle(e.target.value as any)}
                   className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 bg-white"
                 >
-                  <option value="monthly">Mensal (Acerto consolidado no final do mês)</option>
+                  <option value="day_5">Todo dia 5 (Início do mês)</option>
+                  <option value="monthly">Mensal (Final do mês)</option>
                   <option value="biweekly">Quinzenal (Acerto a cada 15 dias)</option>
                   <option value="weekly">Semanal (Toda sexta / sábado)</option>
                   <option value="custom">Data Combinada / Avulso</option>
@@ -436,6 +437,30 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Ciclo de Fechamento / Vencimento Preferencial (Pessoa Física) */}
+          {customerType === 'individual' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                Vencimento / Fechamento Preferencial:
+              </label>
+              <select
+                value={billingCycle}
+                onChange={(e) => setBillingCycle(e.target.value as any)}
+                className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 bg-white"
+              >
+                <option value="day_5">Todo dia 5 (Início do mês)</option>
+                <option value="monthly">Final do mês</option>
+                <option value="biweekly">Quinzenal (15 dias)</option>
+                <option value="weekly">Semanal</option>
+                <option value="custom">Data livre / Sem preferência</option>
+              </select>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Ao lançar um fiado para este cliente, a data de vencimento será sugerida automaticamente.
+              </p>
             </div>
           )}
 

@@ -18,7 +18,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, FiadoEntry, ProductItem } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, getEndOfMonthDate, getDay5DueDate } from '../services/storage';
 import { PRODUCT_CATEGORIES, getCategoryMeta } from '../constants/categories';
 
 interface NewFiadoModalProps {
@@ -44,8 +44,8 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(getRelativeDateString(0));
-  const [dueDate, setDueDate] = useState(getRelativeDateString(defaultDueDays));
-  const [sendWhatsApp, setSendWhatsApp] = useState(true);
+  const [dueDate, setDueDate] = useState(() => getEndOfMonthDate());
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
   const [error, setError] = useState('');
 
   // Cart for items: { [productId]: quantity }
@@ -79,14 +79,14 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
     return StorageService.getCustomerCategoryAnalytics(customerId);
   }, [customerId]);
 
-  // If customer has monthly closing preference, automatically set due date to end of month!
+  // If customer has closing preference (day 5 or end of month), automatically set due date!
   useEffect(() => {
-    if (selectedCustomer?.billingCycle === 'monthly') {
-      const now = new Date();
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      setDueDate(lastDay.toISOString().split('T')[0]);
+    if (selectedCustomer?.billingCycle === 'day_5') {
+      setDueDate(getDay5DueDate(date));
+    } else if (selectedCustomer?.billingCycle === 'monthly') {
+      setDueDate(getEndOfMonthDate(date));
     }
-  }, [customerId, selectedCustomer]);
+  }, [customerId, selectedCustomer, date]);
 
   // Quick categories
   const marmitexProducts = products.filter((p) => p.category === 'marmitex' && p.id !== 'p_refeicao_kg');
@@ -216,14 +216,21 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
     }
   };
 
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    setDueDate(getEndOfMonthDate(newDate));
+  };
+
   const handleShortcutDays = (days: number) => {
     setDueDate(getRelativeDateString(days));
   };
 
+  const handleDay5 = () => {
+    setDueDate(getDay5DueDate(date));
+  };
+
   const handleEndOfMonth = () => {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    setDueDate(lastDay.toISOString().split('T')[0]);
+    setDueDate(getEndOfMonthDate(date));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -404,8 +411,10 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                       `${selectedCustomer.companyDiscountPercent || 0}% de desconto corporativo no pedido total.`}
                     {selectedCustomer.companyDiscountType === 'custom_table' &&
                       'Tabela de preços personalizados acordada com a empresa.'}
+                    {selectedCustomer.billingCycle === 'day_5' &&
+                      ' • Fechamento: Todo dia 5 (Início do mês).'}
                     {selectedCustomer.billingCycle === 'monthly' &&
-                      ' • Fechamento Mensal programado.'}
+                      ' • Fechamento: Fim do mês.'}
                   </span>
                 </div>
               </div>
@@ -825,7 +834,7 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
               <input
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -849,7 +858,14 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               Atalhos de Vencimento / Fechamento:
             </label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              <button
+                type="button"
+                onClick={handleDay5}
+                className="py-1.5 px-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[11px] font-black text-emerald-950 border border-emerald-300 transition"
+              >
+                Dia 5 (Início do Mês)
+              </button>
               <button
                 type="button"
                 onClick={handleEndOfMonth}

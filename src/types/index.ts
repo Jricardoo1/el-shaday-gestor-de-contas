@@ -16,7 +16,7 @@ export interface Customer {
   companyDiscountPercent?: number; // ex: 10%
   companyDiscountPerMarmita?: number; // ex: R$ 2,00 por marmita
   customPrices?: { [productId: string]: number }; // Tabela de preços específicos da empresa
-  billingCycle?: 'monthly' | 'biweekly' | 'weekly' | 'custom'; // Fechamento mensal padrão
+  billingCycle?: 'day_5' | 'monthly' | 'biweekly' | 'weekly' | 'custom'; // Fechamento mensal padrão (ex: todo dia 5 início do mês ou fim do mês)
 }
 
 export type ProductCategory = 'marmitex' | 'bebidas' | 'porcoes' | 'sobremesas' | 'outros';

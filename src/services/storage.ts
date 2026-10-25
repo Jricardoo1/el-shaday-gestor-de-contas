@@ -81,8 +81,9 @@ const INITIAL_CUSTOMERS: Customer[] = [
     phone: '5511991234567',
     address: 'Av. Brasil, 82 - Sobrado amarelo',
     creditLimit: 200,
-    notes: 'Cliente muito pontual. Avisar antes por WhatsApp.',
+    notes: 'Cliente muito pontual. Acerta todo dia 5 no início do mês.',
     customerType: 'individual',
+    billingCycle: 'day_5',
     createdAt: '2026-09-15T14:30:00Z',
   },
   {
@@ -103,6 +104,43 @@ export function getRelativeDateString(daysOffset = 0): string {
   const d = new Date();
   d.setDate(d.getDate() + daysOffset);
   return d.toISOString().split('T')[0];
+}
+
+/**
+ * Calculates the last day of the month for a given date string (YYYY-MM-DD) or current date.
+ * Example: for any day in October 2026, returns '2026-10-31'.
+ */
+export function getEndOfMonthDate(baseDateStr?: string): string {
+  const base = baseDateStr ? new Date(`${baseDateStr.slice(0, 10)}T12:00:00`) : new Date();
+  const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+  const y = lastDay.getFullYear();
+  const m = String(lastDay.getMonth() + 1).padStart(2, '0');
+  const d = String(lastDay.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Calculates the next 5th day of the month (todo dia 5 início do mês).
+ * If the base date day is on or before day 5, returns day 5 of the current month.
+ * If base date day is already at or past day 5, returns day 5 of the following month.
+ * Example: '2026-10-25' -> '2026-11-05', '2026-10-02' -> '2026-10-05', '2026-12-28' -> '2027-01-05'.
+ */
+export function getDay5DueDate(baseDateStr?: string): string {
+  const base = baseDateStr ? new Date(`${baseDateStr.slice(0, 10)}T12:00:00`) : new Date();
+  let targetYear = base.getFullYear();
+  let targetMonth = base.getMonth(); // 0-11
+  const day = base.getDate();
+
+  if (day >= 5) {
+    targetMonth += 1;
+    if (targetMonth > 11) {
+      targetMonth = 0;
+      targetYear += 1;
+    }
+  }
+
+  const m = String(targetMonth + 1).padStart(2, '0');
+  return `${targetYear}-${m}-05`;
 }
 
 /**
