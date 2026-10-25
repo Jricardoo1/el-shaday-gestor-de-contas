@@ -168,10 +168,13 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     }
   };
 
-  // Month entries
+  // Month entries (ordenados em ordem decrescente de data: mais recentes primeiro)
   const monthEntries = useMemo(() => {
-    if (selectedMonth === 'all') return debtInfo.entries;
-    return debtInfo.entries.filter((e) => e.date.startsWith(selectedMonth));
+    const list =
+      selectedMonth === 'all'
+        ? debtInfo.entries
+        : debtInfo.entries.filter((e) => e.date.startsWith(selectedMonth));
+    return [...list].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [debtInfo.entries, selectedMonth, refreshKey]);
 
   // Unpaid entries of the selected month
@@ -921,7 +924,9 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                 <p className="text-xs mt-1">Clique no botão "Novo Consumo" acima para registrar</p>
               </div>
             ) : (
-              debtInfo.entries.map((entry) => {
+              [...debtInfo.entries]
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+                .map((entry) => {
                 const remaining = Math.max(0, entry.amount - entry.paidAmount);
                 const isPaid = entry.status === 'paid';
                 const isOverdue = entry.status === 'overdue';

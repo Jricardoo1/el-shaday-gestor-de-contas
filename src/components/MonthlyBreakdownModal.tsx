@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   FileText,
@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Calendar,
   PackageCheck,
+  ArrowDownUp,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings } from '../types';
 import { formatDateWithWeekday } from '../services/storage';
@@ -67,7 +68,14 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
     window.open(url, '_blank');
   };
 
-  const sortedEntries = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  const sortedEntries = useMemo(() => {
+    return [...entries].sort((a, b) => {
+      const comp = (b.date || '').localeCompare(a.date || '');
+      return sortOrder === 'desc' ? comp : -comp;
+    });
+  }, [entries, sortOrder]);
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
@@ -162,11 +170,20 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
 
           {/* 2. Chronological Day-by-Day Purchases */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-emerald-700" />
                 Espelho Cronológico de Compras e Datas ({entries.length} lançamentos)
               </h4>
+              <button
+                type="button"
+                onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+                title="Clique para alternar entre ordem decrescente (mais recente primeiro) e crescente"
+                className="text-[11px] font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95"
+              >
+                <ArrowDownUp className="w-3.5 h-3.5 text-emerald-700" />
+                <span>{sortOrder === 'desc' ? 'Ordem Decrescente (Mais Recentes)' : 'Ordem Crescente (Mais Antigos)'}</span>
+              </button>
             </div>
 
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">

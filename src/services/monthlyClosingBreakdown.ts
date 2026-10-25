@@ -327,8 +327,8 @@ export const MonthlyClosingBreakdownService = {
     doc.text(`Extrato Cronológico de Compras e Datas (${entries.length} lançamentos)`, 14, currentY);
     currentY += 3;
 
-    // Sort entries chronologically
-    const sortedEntries = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    // Sort entries chronologically in descending order (mais recentes no topo)
+    const sortedEntries = [...entries].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     const datesRows = sortedEntries.map((e) => {
       const dateFormatted = e.date ? formatDateWithWeekday(e.date) : '-';
@@ -452,7 +452,7 @@ export const MonthlyClosingBreakdownService = {
     msg += `💰 *VALOR TOTAL: R$ ${breakdown.totalAmount.toFixed(2)}*\n\n`;
 
     msg += `📅 *DATAS DOS CONSUMOS:*\n`;
-    const sorted = [...entries].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const sorted = [...entries].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     sorted.slice(0, 15).forEach((e) => {
       const dt = e.date ? formatDateWithWeekday(e.date) : '-';
       msg += `- ${dt}: ${e.description} (R$ ${e.amount.toFixed(2)})\n`;
