@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Customer, FiadoEntry, ProductItem, StoreSettings } from '../types';
-import { formatDateWithWeekday } from './storage';
+import { formatDateWithWeekday, formatCurrency } from './storage';
 
 export interface ParsedItemSummary {
   name: string;
@@ -316,7 +316,7 @@ export const MonthlyClosingBreakdownService = {
     doc.text('VALOR TOTAL DA CONTA', 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(12);
     doc.setTextColor(185, 28, 28);
-    doc.text(`R$ ${breakdown.totalAmount.toFixed(2)}`, 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(breakdown.totalAmount)}`, 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     currentY += 24;
 
@@ -337,7 +337,7 @@ export const MonthlyClosingBreakdownService = {
         dateFormatted,
         e.description || 'Consumo no fiado',
         statusLabel,
-        `R$ ${e.amount.toFixed(2)}`,
+        `R$ ${formatCurrency(e.amount)}`,
       ];
     });
 
@@ -449,13 +449,13 @@ export const MonthlyClosingBreakdownService = {
       msg += `🥤 Total de Bebidas: *${breakdown.categoryTotals.bebidas} un.*\n`;
     }
     msg += `📦 Total de Itens: *${breakdown.categoryTotals.totalItems} produtos*\n`;
-    msg += `💰 *VALOR TOTAL: R$ ${breakdown.totalAmount.toFixed(2)}*\n\n`;
+    msg += `💰 *VALOR TOTAL: R$ ${formatCurrency(breakdown.totalAmount)}*\n\n`;
 
     msg += `📅 *DATAS DOS CONSUMOS:*\n`;
     const sorted = [...entries].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     sorted.slice(0, 15).forEach((e) => {
       const dt = e.date ? formatDateWithWeekday(e.date) : '-';
-      msg += `- ${dt}: ${e.description} (R$ ${e.amount.toFixed(2)})\n`;
+      msg += `- ${dt}: ${e.description} (R$ ${formatCurrency(e.amount)})\n`;
     });
 
     if (sorted.length > 15) {

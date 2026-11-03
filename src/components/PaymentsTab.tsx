@@ -12,7 +12,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Customer, PaymentRecord, StoreSettings } from '../types';
-import { getRelativeDateString } from '../services/storage';
+import { getRelativeDateString, formatCurrency } from '../services/storage';
 
 interface PaymentsTabProps {
   payments: PaymentRecord[];
@@ -64,7 +64,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               Recebido Hoje
             </span>
             <span className="text-2xl font-black text-emerald-700">
-              R$ {totalReceivedToday.toFixed(2)}
+              R$ {formatCurrency(totalReceivedToday)}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
@@ -78,7 +78,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               Total Histórico Recebido
             </span>
             <span className="text-2xl font-black text-slate-800">
-              R$ {totalReceived.toFixed(2)}
+              R$ {formatCurrency(totalReceived)}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -180,7 +180,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="text-right">
                     <span className="text-base font-black text-emerald-700">
-                      + R$ {p.amount.toFixed(2)}
+                      + R$ {formatCurrency(p.amount)}
                     </span>
                     <span className="block text-[10px] text-emerald-600 font-semibold uppercase">
                       Confirmado

@@ -9,7 +9,7 @@ import {
   ArrowDownUp,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings } from '../types';
-import { formatDateWithWeekday } from '../services/storage';
+import { formatDateWithWeekday, formatCurrency } from '../services/storage';
 import {
   MonthlyClosingBreakdownService,
   ClosingBreakdownData,
@@ -95,7 +95,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
               </div>
               <p className="text-xs text-emerald-200 mt-0.5">
                 Cliente: <strong>{customer.name}</strong> • Total:{' '}
-                <strong className="text-white">R$ {breakdown.totalAmount.toFixed(2)}</strong>
+                <strong className="text-white">R$ {formatCurrency(breakdown.totalAmount)}</strong>
               </p>
             </div>
           </div>
@@ -160,7 +160,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
                 Valor Total
               </span>
               <div className="text-2xl font-black text-rose-600 my-0.5">
-                R$ {breakdown.totalAmount.toFixed(2)}
+                R$ {formatCurrency(breakdown.totalAmount)}
               </div>
               <span className="text-[11px] text-rose-500 font-medium">
                 {entries.length} compras no período
@@ -208,7 +208,7 @@ export const MonthlyBreakdownModal: React.FC<MonthlyBreakdownModalProps> = ({
                     >
                       {e.status === 'paid' ? 'Quitado' : 'Aberto'}
                     </span>
-                    <span className="font-bold text-slate-900">R$ {e.amount.toFixed(2)}</span>
+                    <span className="font-bold text-slate-900">R$ {formatCurrency(e.amount)}</span>
                   </div>
                 </div>
               ))}

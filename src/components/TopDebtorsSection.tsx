@@ -12,7 +12,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Customer, FiadoEntry } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 
 interface TopDebtorsSectionProps {
   customers: Customer[];
@@ -165,7 +165,7 @@ export const TopDebtorsSection: React.FC<TopDebtorsSectionProps> = ({
                         {item.overdueCount > 0 ? (
                           <span className="inline-flex items-center gap-1 font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
                             <AlertTriangle className="w-3 h-3 text-rose-600" />
-                            {item.overdueCount} compra(s) vencida(s) (R$ {item.overdueAmount.toFixed(2)})
+                            {item.overdueCount} compra(s) vencida(s) (R$ {formatCurrency(item.overdueAmount)})
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
@@ -181,7 +181,7 @@ export const TopDebtorsSection: React.FC<TopDebtorsSectionProps> = ({
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                     <div className="text-left sm:text-right">
                       <div className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                        R$ {item.totalDebt.toFixed(2)}
+                        R$ {formatCurrency(item.totalDebt)}
                       </div>
                       <span className="text-[11px] text-slate-500 font-medium">
                         {share}% do fiado da loja
@@ -243,7 +243,7 @@ export const TopDebtorsSection: React.FC<TopDebtorsSectionProps> = ({
               </span>
             </div>
             <div className="font-black text-amber-950 sm:text-right shrink-0">
-              Subtotal Top 5: <span className="text-sm font-black">R$ {top5Total.toFixed(2)}</span>
+              Subtotal Top 5: <span className="text-sm font-black">R$ {formatCurrency(top5Total)}</span>
             </div>
           </div>
         </div>

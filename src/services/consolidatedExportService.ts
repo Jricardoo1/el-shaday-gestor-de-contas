@@ -1,4 +1,5 @@
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
+import { formatCurrency } from './storage';
 
 export interface ConsolidatedFilters {
   customerId?: string; // 'all' or customer id
@@ -149,7 +150,7 @@ export const ConsolidatedExportService = {
     };
 
     const formatMoney = (val: number): string => {
-      return val.toFixed(2).replace('.', ',');
+      return formatCurrency(val);
     };
 
     const now = new Date();

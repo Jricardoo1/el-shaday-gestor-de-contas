@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Customer, StoreSettings } from '../types';
-import { StorageService } from './storage';
+import { StorageService, formatCurrency } from './storage';
 
 export const CustomerPdfGenerator = {
   /**
@@ -79,7 +79,7 @@ export const CustomerPdfGenerator = {
     doc.text(`CPF / CNPJ: ${docNumber}     |     WhatsApp / Telefone: ${phone}`, 18, currentY + 13);
 
     const address = customer.address || 'Não informado';
-    const limit = customer.creditLimit ? `R$ ${customer.creditLimit.toFixed(2)}` : 'Sem limite definido';
+    const limit = customer.creditLimit ? `R$ ${formatCurrency(customer.creditLimit)}` : 'Sem limite definido';
     doc.text(`Endereço / Setor: ${address}     |     Limite de Crédito: ${limit}`, 18, currentY + 19);
 
     currentY += 31;
@@ -101,7 +101,7 @@ export const CustomerPdfGenerator = {
     doc.text('TOTAL CONSUMIDO NO FIADO', 14 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(12);
     doc.setTextColor(...darkSlate);
-    doc.text(`R$ ${totalPurchased.toFixed(2)}`, 14 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalPurchased)}`, 14 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     // Card 2: Total Abatido/Pago
     doc.setFillColor(248, 250, 252);
@@ -111,7 +111,7 @@ export const CustomerPdfGenerator = {
     doc.text('TOTAL PAGO / ABATIDO', 14 + cardWidth + 3 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(12);
     doc.setTextColor(5, 150, 105);
-    doc.text(`R$ ${totalPaid.toFixed(2)}`, 14 + cardWidth + 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalPaid)}`, 14 + cardWidth + 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     // Card 3: Saldo Devedor Atual
     if (totalRemaining > 0) {
@@ -131,7 +131,7 @@ export const CustomerPdfGenerator = {
       totalRemaining > 0 ? dangerColor[1] : primaryColor[1],
       totalRemaining > 0 ? dangerColor[2] : primaryColor[2]
     );
-    doc.text(`R$ ${totalRemaining.toFixed(2)}`, 14 + (cardWidth + 3) * 2 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalRemaining)}`, 14 + (cardWidth + 3) * 2 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     currentY += 24;
 
@@ -156,7 +156,7 @@ export const CustomerPdfGenerator = {
         dateStr,
         fullDesc || 'Consumo no fiado',
         dueDateStr,
-        `R$ ${entry.amount.toFixed(2)}`,
+        `R$ ${formatCurrency(entry.amount)}`,
         statusText,
       ];
     });
@@ -235,7 +235,7 @@ export const CustomerPdfGenerator = {
         dateStr,
         methodLabel,
         p.notes || 'Abatimento de conta',
-        `R$ ${p.amount.toFixed(2)}`,
+        `R$ ${formatCurrency(p.amount)}`,
       ];
     });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Store,
@@ -59,8 +59,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     'daily' | 'weekly' | 'monthly' | 'disabled'
   >(settings.backupReminderFrequency || 'weekly');
   const [products, setProducts] = useState<ProductItem[]>(
-    settings.products && settings.products.length > 0 ? settings.products : DEFAULT_PRODUCTS
+    Array.isArray(settings.products) ? settings.products : DEFAULT_PRODUCTS
   );
+  const [cardapioMessage, setCardapioMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Array.isArray(settings.products)) {
+      setProducts(settings.products);
+    }
+  }, [settings.products]);
 
   // Product manager filter and custom product creation states
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
@@ -147,8 +154,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     );
   };
 
-  const handleAddCustomProduct = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddCustomProduct = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const cleanName = newProductName.trim();
     if (!cleanName) return;
     const priceVal = parseFloat(newProductPrice.replace(',', '.')) || 0;
@@ -159,30 +166,112 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       price: priceVal,
       description: newProductDescription.trim() || undefined,
     };
-    setProducts((prev) => [...prev, newProd]);
+    const updatedProducts = [...products, newProd];
+    setProducts(updatedProducts);
+
+    // Salva imediatamente no Storage para persistência instantânea no cardápio
+    const updatedSettings: StoreSettings = {
+      ...settings,
+      storeName: storeName.trim(),
+      ownerName: ownerName.trim(),
+      phone: phone.trim(),
+      pixKey: pixKey.trim(),
+      pixKeyType,
+      city: city.trim().toUpperCase(),
+      defaultDueDays: Number(defaultDueDays) || 15,
+      backupReminderFrequency,
+      products: updatedProducts,
+    };
+    onSave(updatedSettings);
+    onDataReload();
+
     setNewProductName('');
     setNewProductPrice('');
     setNewProductDescription('');
     setIsAddingProduct(false);
+
+    const successMsg = `Produto "${cleanName}" cadastrado e salvo com sucesso no cardápio!`;
+    setMessage(successMsg);
+    setCardapioMessage(successMsg);
+    setTimeout(() => {
+      setMessage('');
+      setCardapioMessage(null);
+    }, 4000);
   };
 
   const handleRemoveProduct = (productId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    const prod = products.find((p) => p.id === productId);
+    if (!prod) return;
+    setProductToDelete(prod);
   };
 
   const handleConfirmDeleteProduct = () => {
     if (productToDelete) {
-      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
-      setMessage(`Item "${productToDelete.name}" excluído do cardápio! Lembre-se de salvar as alterações.`);
-      setTimeout(() => setMessage(''), 3500);
+      const deletedName = productToDelete.name;
+      const updatedProducts = products.filter((p) => p.id !== productToDelete.id);
+      setProducts(updatedProducts);
+      setRawPriceMap((prev) => {
+        const next = { ...prev };
+        delete next[productToDelete.id];
+        return next;
+      });
+
+      // Salva imediatamente no Storage para persistência permanente da exclusão
+      const updatedSettings: StoreSettings = {
+        ...settings,
+        storeName: storeName.trim(),
+        ownerName: ownerName.trim(),
+        phone: phone.trim(),
+        pixKey: pixKey.trim(),
+        pixKeyType,
+        city: city.trim().toUpperCase(),
+        defaultDueDays: Number(defaultDueDays) || 15,
+        backupReminderFrequency,
+        products: updatedProducts,
+      };
+      onSave(updatedSettings);
+      onDataReload();
+
       setProductToDelete(null);
+
+      const successMsg = `Item "${deletedName}" excluído com sucesso do cardápio!`;
+      setMessage(successMsg);
+      setCardapioMessage(successMsg);
+      setTimeout(() => {
+        setMessage('');
+        setCardapioMessage(null);
+      }, 4000);
     }
   };
 
   const handleResetDefaultProducts = () => {
     setProducts(DEFAULT_PRODUCTS);
     setRawPriceMap({});
+
+    // Salva imediatamente a restauração do cardápio padrão
+    const updatedSettings: StoreSettings = {
+      ...settings,
+      storeName: storeName.trim(),
+      ownerName: ownerName.trim(),
+      phone: phone.trim(),
+      pixKey: pixKey.trim(),
+      pixKeyType,
+      city: city.trim().toUpperCase(),
+      defaultDueDays: Number(defaultDueDays) || 15,
+      backupReminderFrequency,
+      products: DEFAULT_PRODUCTS,
+    };
+    onSave(updatedSettings);
+    onDataReload();
+
     setShowResetProductsConfirm(false);
+    const successMsg = 'Cardápio restaurado para os produtos padrão originais com sucesso!';
+    setMessage(successMsg);
+    setCardapioMessage(successMsg);
+    setTimeout(() => {
+      setMessage('');
+      setCardapioMessage(null);
+    }, 4000);
   };
 
   const handleExportBackup = () => {
@@ -305,7 +394,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
 
-            {/* Botão de Fechar a Janela no Topo */}
+            {/* Botão de Salvar Alterações e Fechar no Topo */}
+            <button
+              type="submit"
+              form="settings-form"
+              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-3 py-1.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer ml-1"
+              title="Salvar todas as configurações"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span className="hidden sm:inline">Salvar Alterações</span>
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -473,6 +571,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
               </div>
+
+              {cardapioMessage && (
+                <div className="p-3 bg-emerald-100/90 border-2 border-emerald-400 rounded-xl text-emerald-950 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>{cardapioMessage}</span>
+                </div>
+              )}
 
               {/* Filtro por Categoria e Busca por Nome */}
               <div className="space-y-2.5 pt-1">
@@ -721,6 +826,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         placeholder="Ex: Coca-Cola 2 Litros ou Suco Natural 500ml"
                         value={newProductName}
                         onChange={(e) => setNewProductName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomProduct();
+                          }
+                        }}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium"
                       />
                     </div>
@@ -752,6 +863,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         placeholder="Ex: 12,50 ou 59,90"
                         value={newProductPrice}
                         onChange={(e) => setNewProductPrice(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomProduct();
+                          }
+                        }}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-bold"
                       />
                     </div>
@@ -765,6 +882,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         placeholder="Ex: Garrafa 2L gelada ou Copo 500ml"
                         value={newProductDescription}
                         onChange={(e) => setNewProductDescription(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomProduct();
+                          }
+                        }}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 font-medium"
                       />
                     </div>

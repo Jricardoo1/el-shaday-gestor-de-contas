@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings, UpcomingDueCustomer } from '../types';
+import { formatCurrency } from '../services/storage';
 
 interface UpcomingDueAlertBannerProps {
   upcomingCustomers: UpcomingDueCustomer[];
@@ -69,7 +70,7 @@ export const UpcomingDueAlertBanner: React.FC<UpcomingDueAlertBannerProps> = ({
               A Receber em até 3d
             </span>
             <span className="text-sm font-black text-amber-900">
-              R$ {totalSumDueSoon.toFixed(2)}
+              R$ {formatCurrency(totalSumDueSoon)}
             </span>
           </div>
 
@@ -173,11 +174,11 @@ export const UpcomingDueAlertBanner: React.FC<UpcomingDueAlertBannerProps> = ({
                         A Vencer
                       </span>
                       <span className="text-base font-black text-rose-600 block leading-tight">
-                        R$ {item.totalDueSoon.toFixed(2)}
+                        R$ {formatCurrency(item.totalDueSoon)}
                       </span>
                       {item.totalOverallDebt > item.totalDueSoon && (
                         <span className="text-[10px] text-slate-400 font-semibold">
-                          (Total: R$ {item.totalOverallDebt.toFixed(2)})
+                          (Total: R$ {formatCurrency(item.totalOverallDebt)})
                         </span>
                       )}
                     </div>

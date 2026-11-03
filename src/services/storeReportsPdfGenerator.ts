@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService } from './storage';
+import { StorageService, formatCurrency } from './storage';
 
 export const StoreReportsPdfGenerator = {
   /**
@@ -105,7 +105,7 @@ export const StoreReportsPdfGenerator = {
     doc.text('TOTAL A RECEBER', 14 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(11);
     doc.setTextColor(...darkSlate);
-    doc.text(`R$ ${totalFiadoEmAberto.toFixed(2)}`, 14 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalFiadoEmAberto)}`, 14 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     // Card 2: Total Vencido
     doc.setFillColor(255, 241, 242);
@@ -116,7 +116,7 @@ export const StoreReportsPdfGenerator = {
     doc.text('CONTAS VENCIDAS', 14 + (cardWidth + 3) + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(11);
     doc.setTextColor(...dangerColor);
-    doc.text(`R$ ${totalVencido.toFixed(2)}`, 14 + (cardWidth + 3) + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalVencido)}`, 14 + (cardWidth + 3) + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     // Card 3: Vencendo Hoje
     doc.setFillColor(254, 243, 199);
@@ -127,7 +127,7 @@ export const StoreReportsPdfGenerator = {
     doc.text('VENCENDO HOJE', 14 + (cardWidth + 3) * 2 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(11);
     doc.setTextColor(180, 83, 9);
-    doc.text(`R$ ${totalVencendoHoje.toFixed(2)}`, 14 + (cardWidth + 3) * 2 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalVencendoHoje)}`, 14 + (cardWidth + 3) * 2 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     // Card 4: Recebido no Mês
     doc.setFillColor(236, 253, 245);
@@ -138,7 +138,7 @@ export const StoreReportsPdfGenerator = {
     doc.text('RECEBIDO NO MÊS', 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 5.5, { align: 'center' });
     doc.setFontSize(11);
     doc.setTextColor(5, 150, 105);
-    doc.text(`R$ ${totalReceivedThisMonth.toFixed(2)}`, 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
+    doc.text(`R$ ${formatCurrency(totalReceivedThisMonth)}`, 14 + (cardWidth + 3) * 3 + cardWidth / 2, currentY + 13.5, { align: 'center' });
 
     currentY += 24;
 
@@ -154,7 +154,7 @@ export const StoreReportsPdfGenerator = {
       const name = `${item.customer.name} ${item.customer.nickname ? `(${item.customer.nickname})` : ''} ${type}`;
       const phone = item.customer.phone || '-';
       const overdueStatus = item.overdueCount > 0 ? `${item.overdueCount} vencida(s)` : 'Em dia';
-      const limit = item.customer.creditLimit ? `R$ ${item.customer.creditLimit.toFixed(2)}` : 'Livre';
+      const limit = item.customer.creditLimit ? `R$ ${formatCurrency(item.customer.creditLimit)}` : 'Livre';
 
       return [
         `${index + 1}º`,
@@ -162,7 +162,7 @@ export const StoreReportsPdfGenerator = {
         phone,
         limit,
         overdueStatus,
-        `R$ ${item.totalDebt.toFixed(2)}`,
+        `R$ ${formatCurrency(item.totalDebt)}`,
       ];
     });
 
@@ -250,7 +250,7 @@ export const StoreReportsPdfGenerator = {
         customerName,
         methodLabel,
         p.notes || `Recibo #${p.receiptNumber || 'OK'}`,
-        `R$ ${p.amount.toFixed(2)}`,
+        `R$ ${formatCurrency(p.amount)}`,
       ];
     });
 

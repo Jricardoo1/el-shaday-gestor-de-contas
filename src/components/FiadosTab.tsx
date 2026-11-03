@@ -12,7 +12,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Customer, FiadoEntry, StoreSettings } from '../types';
-import { getRelativeDateString } from '../services/storage';
+import { getRelativeDateString, formatCurrency } from '../services/storage';
 import { ConfirmModal } from './ConfirmModal';
 
 interface FiadosTabProps {
@@ -273,11 +273,11 @@ export const FiadosTab: React.FC<FiadosTabProps> = ({
                   <div className="text-left sm:text-right">
                     <span className="text-[11px] text-slate-400 block font-medium">Valor Total</span>
                     <span className="text-sm font-bold text-slate-700">
-                      R$ {entry.amount.toFixed(2)}
+                      R$ {formatCurrency(entry.amount)}
                     </span>
                     {!isPaid && (
                       <span className="block text-base font-black text-rose-600">
-                        Resta: R$ {remaining.toFixed(2)}
+                        Resta: R$ {formatCurrency(remaining)}
                       </span>
                     )}
                   </div>

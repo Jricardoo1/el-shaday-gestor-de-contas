@@ -21,7 +21,7 @@ import {
   ArrowUpZA,
 } from 'lucide-react';
 import { Customer, StoreSettings } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 import { CustomerExportService } from '../services/customerExportService';
 import { UpcomingDueAlertBanner } from './UpcomingDueAlertBanner';
 
@@ -467,7 +467,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                         </span>
                       )}
                       {customer.creditLimit && (
-                        <span>• Limite: R$ {customer.creditLimit.toFixed(2)}</span>
+                        <span>• Limite: R$ {formatCurrency(customer.creditLimit)}</span>
                       )}
                     </p>
 
@@ -485,7 +485,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                           }`}
                         >
                           <Clock className="w-3 h-3" />
-                          {upcomingInfo.urgencyLabel} (R$ {upcomingInfo.totalDueSoon.toFixed(2)})
+                          {upcomingInfo.urgencyLabel} (R$ {formatCurrency(upcomingInfo.totalDueSoon)})
                         </span>
                       )}
 
@@ -512,7 +512,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                       {debt.creditBalance > 0 && (
                         <span className="text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
                           <Wallet className="w-3 h-3 text-emerald-700" />
-                          Crédito Pré-Pago: R$ {debt.creditBalance.toFixed(2)}
+                          Crédito Pré-Pago: R$ {formatCurrency(debt.creditBalance)}
                         </span>
                       )}
                     </div>
@@ -531,7 +531,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                           Crédito Disponível
                         </span>
                         <span className="text-base font-black text-emerald-700">
-                          + R$ {debt.creditBalance.toFixed(2)}
+                          + R$ {formatCurrency(debt.creditBalance)}
                         </span>
                       </>
                     ) : (
@@ -550,7 +550,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                               : 'text-emerald-600'
                           }`}
                         >
-                          R$ {debt.totalDebt.toFixed(2)}
+                          R$ {formatCurrency(debt.totalDebt)}
                         </span>
                       </>
                     )}

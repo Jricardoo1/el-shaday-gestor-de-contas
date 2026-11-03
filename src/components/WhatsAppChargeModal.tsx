@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, Copy, Check, MessageSquare, Phone, Calendar, DollarSign, Store, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 
 type MessageType = 'friendly_reminder' | 'overdue' | 'purchase_receipt' | 'payment_receipt' | 'full_statement';
 
@@ -52,7 +52,7 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
 
     switch (template) {
       case 'friendly_reminder': {
-        const amountStr = `R$ ${totalDebt.toFixed(2)}`;
+        const amountStr = `R$ ${formatCurrency(totalDebt)}`;
         const nearestEntry = preSelectedEntry || debtInfo.entries.find((e) => e.status !== 'paid');
         const dueText = nearestEntry
           ? `com vencimento para *${new Date(nearestEntry.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}*`
@@ -65,7 +65,7 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
       }
 
       case 'overdue': {
-        const amountStr = `R$ ${totalDebt.toFixed(2)}`;
+        const amountStr = `R$ ${formatCurrency(totalDebt)}`;
         return `Olá ${greetingName}, tudo bem com você? Esperamos que sim! 🙏\n\nEstamos revisando os lançamentos da sua conta na *${storeName}* e vimos que o saldo a prazo no valor de *${amountStr}* já passou da data combinada de vencimento.\n\nQuando você puder passar aqui no balcão para acertar ou mandar pelo PIX, ficamos muito gratos!\n${
           pixKey ? `👉 *${pixKey}*\n\n` : ''
         }Caso já tenha acertado, por favor desconsidere. Obrigado pela atenção!`;
@@ -73,20 +73,20 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
 
       case 'purchase_receipt': {
         const item = preSelectedEntry || debtInfo.entries[0];
-        const val = item ? item.amount.toFixed(2) : totalDebt.toFixed(2);
+        const val = item ? formatCurrency(item.amount) : formatCurrency(totalDebt);
         const desc = item?.description ? `\n🍱 *Itens:* ${item.description}` : '';
         const due = item?.dueDate
           ? new Date(item.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')
           : 'a combinar';
 
-        return `Olá ${greetingName}! Registramos seu consumo a prazo aqui na *${storeName}*:\n\n💰 *Valor: R$ ${val}*${desc}\n📅 *Vencimento combinado:* ${due}\n📊 *Saldo total da conta:* R$ ${totalDebt.toFixed(
-          2
+        return `Olá ${greetingName}! Registramos seu consumo a prazo aqui na *${storeName}*:\n\n💰 *Valor: R$ ${val}*${desc}\n📅 *Vencimento combinado:* ${due}\n📊 *Saldo total da conta:* R$ ${formatCurrency(
+          totalDebt
         )}\n\nAgradecemos muito pela preferência!`;
       }
 
       case 'payment_receipt': {
-        const paidVal = lastPayment ? lastPayment.amount.toFixed(2) : '0,00';
-        const remainingVal = totalDebt.toFixed(2);
+        const paidVal = lastPayment ? formatCurrency(lastPayment.amount) : '0,00';
+        const remainingVal = formatCurrency(totalDebt);
         const isSettled = totalDebt <= 0.01;
 
         return `Olá ${greetingName}! Confirmamos o recebimento do seu pagamento aqui na *${storeName}*: ✅\n\n💵 *Valor Pago:* R$ ${paidVal}\n${
@@ -100,13 +100,13 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
         const lines = debtInfo.entries
           .map((e) => {
             const dateStr = new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR');
-            const remaining = (e.amount - e.paidAmount).toFixed(2);
-            return `• ${dateStr}: ${e.description} - R$ ${e.amount.toFixed(2)} (Resta: R$ ${remaining})`;
+            const remaining = formatCurrency(e.amount - e.paidAmount);
+            return `• ${dateStr}: ${e.description} - R$ ${formatCurrency(e.amount)} (Resta: R$ ${remaining})`;
           })
           .join('\n');
 
-        return `📄 *Extrato da Conta Cliente - ${storeName}*\nCliente: *${customer.name}*\n\n${lines}\n\n━━━━━━━━━━━━━━\n💰 *Total em Aberto: R$ ${totalDebt.toFixed(
-          2
+        return `📄 *Extrato da Conta Cliente - ${storeName}*\nCliente: *${customer.name}*\n\n${lines}\n\n━━━━━━━━━━━━━━\n💰 *Total em Aberto: R$ ${formatCurrency(
+          totalDebt
         )}*\n${pixKey ? `👉 *${pixKey}*\n` : ''}\nQualquer dúvida, estamos à disposição!`;
       }
     }
@@ -297,7 +297,7 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
               </span>
             </div>
             <span className="font-bold text-slate-800">
-              Saldo: R$ {totalDebt.toFixed(2)}
+              Saldo: R$ {formatCurrency(totalDebt)}
             </span>
           </div>
 

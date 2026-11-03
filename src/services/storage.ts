@@ -170,6 +170,19 @@ export function formatDateWithWeekday(dateStr?: string, includeYear = false): st
   return `${day}/${month} ${weekday}`;
 }
 
+/**
+ * Formats a numeric value into Brazilian Real format with dot as thousands separator and comma as decimal separator.
+ * Example: 1000 -> "1.000,00", 2500.5 -> "2.500,50", 12.3 -> "12,30".
+ */
+export function formatCurrency(val: number | string | null | undefined): string {
+  const num = typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val;
+  if (num === null || num === undefined || isNaN(num)) return '0,00';
+  return num.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export const DEFAULT_PRODUCTS: ProductItem[] = [
   // Marmitex, Pratos e Peso no KG
   { id: 'p_marmita_p', name: 'Marmitex Pequena', category: 'marmitex', price: 16.0, description: 'Porção individual ideal' },
@@ -566,6 +579,15 @@ export const StorageService = {
     return list;
   },
 
+  deleteFiadoEntries(ids: string[]): FiadoEntry[] {
+    const idSet = new Set(ids);
+    const list = this.getFiadoEntries().filter((e) => !idSet.has(e.id));
+    save(STORAGE_KEYS.ENTRIES, list);
+    this.updateAdminSelfRecord();
+    ids.forEach((id) => FirebaseService.deleteFiadoEntry(id));
+    return list;
+  },
+
   // Payments
   getPayments(): PaymentRecord[] {
     const activeUserId = AuthService.getActiveUserId();
@@ -708,16 +730,10 @@ export const StorageService = {
     if (!settings.deviceId) {
       settings.deviceId = user?.id || LicenseSecurity.getOrCreateDeviceId();
     }
-    if (!settings.products || settings.products.length === 0) {
+    if (!Array.isArray(settings.products)) {
       settings.products = DEFAULT_PRODUCTS;
-    } else {
-      const existingIds = new Set(settings.products.map((p) => p.id));
-      const missing = DEFAULT_PRODUCTS.filter((p) => !existingIds.has(p.id));
-      if (missing.length > 0) {
-        settings.products = [...settings.products, ...missing];
-      }
+      save(STORAGE_KEYS.SETTINGS, settings);
     }
-    save(STORAGE_KEYS.SETTINGS, settings);
     return settings;
   },
 

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MerchantAdminRecord, StoreSettings, AdminPixConfig } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatCurrency } from '../services/storage';
 import { LicenseSecurity } from '../services/licenseSecurity';
 import { ConfirmModal } from './ConfirmModal';
 import { generatePixCopiaECola, generateQRCodeSVG } from '../services/pixGenerator';
@@ -120,7 +120,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   const handleSendCodeViaWhatsApp = () => {
-    const text = `Olá ${selectedMerchantName || 'Comerciante'}! Confirmamos o seu pagamento do PIX de R$ ${adminPix.monthlyFee.toFixed(2)} da licença do Controle de Marmitex/Fiado. ✅\n\n🔑 *Seu Código de Liberação Offline:* \n*${generatedCode}*\n\n📲 *Como ativar:* Abra o app no seu celular, toque em Licença > "Código Offline" e cole este código acima. O app liberará +${generatorDays} dias imediatamente mesmo sem internet!\n\nMuito obrigado pela parceria e boas vendas!`;
+    const text = `Olá ${selectedMerchantName || 'Comerciante'}! Confirmamos o seu pagamento do PIX de R$ ${formatCurrency(adminPix.monthlyFee)} da licença do Controle de Marmitex/Fiado. ✅\n\n🔑 *Seu Código de Liberação Offline:* \n*${generatedCode}*\n\n📲 *Como ativar:* Abra o app no seu celular, toque em Licença > "Código Offline" e cole este código acima. O app liberará +${generatorDays} dias imediatamente mesmo sem internet!\n\nMuito obrigado pela parceria e boas vendas!`;
     const cleanPhone = (selectedMerchantPhone || '').replace(/\D/g, '');
     const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -129,7 +129,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const handleSendRenewalReminder = (m: MerchantAdminRecord) => {
     const text = `Olá ${m.ownerName}! Notamos que a licença mensal do seu aplicativo *Controle de Marmitex / Fiado* (${m.storeName}) vence em ${new Date(
       m.expirationDate + 'T12:00:00'
-    ).toLocaleDateString('pt-BR')}.\n\nPara renovar por mais 30 dias:\n💰 *Valor:* R$ ${adminPix.monthlyFee.toFixed(2)}\n👉 *Chave PIX:* ${adminPix.adminPixKey}\n👤 *Titular:* ${adminPix.adminName}\n\nAssim que pagar, envie o comprovante informando o seu ID (*${m.deviceId}*) para liberação imediata!`;
+    ).toLocaleDateString('pt-BR')}.\n\nPara renovar por mais 30 dias:\n💰 *Valor:* R$ ${formatCurrency(adminPix.monthlyFee)}\n👉 *Chave PIX:* ${adminPix.adminPixKey}\n👤 *Titular:* ${adminPix.adminName}\n\nAssim que pagar, envie o comprovante informando o seu ID (*${m.deviceId}*) para liberação imediata!`;
     const cleanPhone = m.phone.replace(/\D/g, '');
     const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -330,10 +330,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   Receita Mensal (MRR)
                 </span>
                 <span className="text-2xl font-black text-amber-700">
-                  R$ {mrrEstimated.toFixed(2)}
+                  R$ {formatCurrency(mrrEstimated)}
                 </span>
                 <span className="text-[11px] text-amber-600 block mt-0.5">
-                  a R$ {adminPix.monthlyFee.toFixed(2)}/mês
+                  a R$ {formatCurrency(adminPix.monthlyFee)}/mês
                 </span>
               </div>
 
@@ -503,7 +503,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <span>•</span>
                               <span>Clientes anotados: {m.totalCustomers}</span>
                               <span>•</span>
-                              <span>Total recebido: R$ {m.totalPaidFees.toFixed(2)}</span>
+                              <span>Total recebido: R$ {formatCurrency(m.totalPaidFees)}</span>
                             </div>
                           </div>
 
@@ -567,7 +567,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       Configuração da Chave PIX do Desenvolvedor
                     </h3>
                     <p className="text-xs text-emerald-800 mt-0.5 leading-relaxed">
-                      É para este PIX que todos os comerciantes cadastrados no sistema farão o pagamento da mensalidade de R$ {adminPix.monthlyFee.toFixed(2)}. As alterações feitas aqui aparecem imediatamente na tela de pagamento de todas as lojas!
+                      É para este PIX que todos os comerciantes cadastrados no sistema farão o pagamento da mensalidade de R$ {formatCurrency(adminPix.monthlyFee)}. As alterações feitas aqui aparecem imediatamente na tela de pagamento de todas as lojas!
                     </p>
                   </div>
                 </div>
@@ -715,7 +715,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       Pré-visualização: O que o Comerciante verá ao Pagar
                     </span>
                     <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md">
-                      R$ {adminPix.monthlyFee.toFixed(2)} / mês
+                      R$ {formatCurrency(adminPix.monthlyFee)} / mês
                     </span>
                   </div>
 
@@ -950,7 +950,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           : 'border-slate-200 bg-white text-slate-600'
                       }`}
                     >
-                      30 Dias (R$ {adminPix.monthlyFee.toFixed(2)})
+                      30 Dias (R$ {formatCurrency(adminPix.monthlyFee)})
                     </button>
                     <button
                       type="button"

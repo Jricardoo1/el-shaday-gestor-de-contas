@@ -300,6 +300,11 @@ export default function App() {
     setEntries(updated);
   };
 
+  const handleDeleteEntries = (entryIds: string[]) => {
+    const updated = StorageService.deleteFiadoEntries(entryIds);
+    setEntries(updated);
+  };
+
   // Handlers for Payments
   const handleSavePayment = (payment: PaymentRecord, openWhatsAppReceipt = false) => {
     const result = StorageService.addPayment(payment);
@@ -546,6 +551,8 @@ export default function App() {
           onNewPayment={(cId) => handleOpenNewPayment(cId)}
           onOpenWhatsApp={(c, e) => handleOpenWhatsApp(c, e)}
           onDeleteEntry={handleDeleteEntry}
+          onDeleteEntries={handleDeleteEntries}
+          onSaveCustomer={handleSaveCustomer}
           onUpdateEntry={(entry) => handleSaveFiado(entry, false)}
           onNewPrepaidCredit={(cId) => handleOpenPrepaidCredit(cId)}
           onOpenCollectionSuggestions={(c) => handleOpenCollectionSuggestions(c)}

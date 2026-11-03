@@ -21,7 +21,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatCurrency } from '../services/storage';
 import { NavTab } from './Navigation';
 
 interface HomeTabProps {
@@ -178,7 +178,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               Recebido Hoje no Caixa
             </span>
             <span className="text-lg sm:text-xl font-black text-white">
-              R$ {totalRecebidoHoje.toFixed(2)}
+              R$ {formatCurrency(totalRecebidoHoje)}
             </span>
           </div>
         </div>
@@ -232,7 +232,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 </div>
               </div>
               <span className="text-base font-black text-amber-900">
-                R$ {totalDueToday.toFixed(2)}
+                R$ {formatCurrency(totalDueToday)}
               </span>
             </div>
 
@@ -247,7 +247,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 </div>
               </div>
               <span className="text-base font-black text-orange-900">
-                R$ {totalDueTomorrow.toFixed(2)}
+                R$ {formatCurrency(totalDueTomorrow)}
               </span>
             </div>
           </div>
@@ -275,12 +275,12 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {item.dueTodayEntries.length > 0 && (
                       <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md">
-                        {item.dueTodayEntries.length} vence hoje (R$ {item.dueTodayVal.toFixed(2)})
+                        {item.dueTodayEntries.length} vence hoje (R$ {formatCurrency(item.dueTodayVal)})
                       </span>
                     )}
                     {item.dueTomorrowEntries.length > 0 && (
                       <span className="text-[10px] font-black text-orange-900 bg-orange-100 border border-orange-300 px-1.5 py-0.5 rounded-md">
-                        {item.dueTomorrowEntries.length} vence amanhã (R$ {item.dueTomorrowVal.toFixed(2)})
+                        {item.dueTomorrowEntries.length} vence amanhã (R$ {formatCurrency(item.dueTomorrowVal)})
                       </span>
                     )}
                   </div>
@@ -347,7 +347,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900">
-            R$ {totalFiadoEmAberto.toFixed(2)}
+            R$ {formatCurrency(totalFiadoEmAberto)}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-500">Saldo em aberto</span>
@@ -372,7 +372,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-rose-600">
-            R$ {totalVencido.toFixed(2)}
+            R$ {formatCurrency(totalVencido)}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-rose-100 text-xs">
             <span className="text-rose-700 font-semibold">
@@ -399,7 +399,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-amber-700">
-            R$ {totalVencendoHoje.toFixed(2)}
+            R$ {formatCurrency(totalVencendoHoje)}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 text-xs">
             <span className="text-amber-800 font-medium">
@@ -420,7 +420,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-blue-700">
-            R$ {totalCreditoAntecipado.toFixed(2)}
+            R$ {formatCurrency(totalCreditoAntecipado)}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-100 text-xs">
             <span className="text-blue-800 font-medium">Marmitas pré-pagas</span>
@@ -602,7 +602,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       </span>
                     )}
                     <span className="text-slate-500 font-black">
-                      Total: R$ {item.totalDebt.toFixed(2)}
+                      Total: R$ {formatCurrency(item.totalDebt)}
                     </span>
                   </div>
                 </div>
@@ -640,8 +640,8 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           <div>
             <span className="text-slate-500 font-medium">Movimento de Hoje:</span>
             <div className="font-bold text-slate-800">
-              {entriesToday.length} compras a prazo registradas (R$ {totalVendidoHoje.toFixed(2)}) •{' '}
-              {paymentsToday.length} pagamentos recebidos (R$ {totalRecebidoHoje.toFixed(2)})
+              {entriesToday.length} compras a prazo registradas (R$ {formatCurrency(totalVendidoHoje)}) •{' '}
+              {paymentsToday.length} pagamentos recebidos (R$ {formatCurrency(totalRecebidoHoje)})
             </div>
           </div>
         </div>

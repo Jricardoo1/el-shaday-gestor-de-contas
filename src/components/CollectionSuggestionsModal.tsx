@@ -15,7 +15,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { Customer, StoreSettings } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 
 interface CollectionSuggestionsModalProps {
   customers: Customer[];
@@ -46,7 +46,7 @@ export const CollectionSuggestionsModal: React.FC<CollectionSuggestionsModalProp
     : 'Cliente';
 
   const debtValue = debtInfo && debtInfo.totalDebt > 0
-    ? `R$ ${debtInfo.totalDebt.toFixed(2)}`
+    ? `R$ ${formatCurrency(debtInfo.totalDebt)}`
     : 'R$ 0,00';
 
   const nearestDue = debtInfo?.entries.find((e) => e.status !== 'paid');
@@ -196,7 +196,7 @@ export const CollectionSuggestionsModal: React.FC<CollectionSuggestionsModalProp
                 const debt = StorageService.getCustomerDebt(c.id).totalDebt;
                 return (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {debt.toFixed(2)}
+                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {formatCurrency(debt)}
                   </option>
                 );
               })}
@@ -210,7 +210,7 @@ export const CollectionSuggestionsModal: React.FC<CollectionSuggestionsModalProp
                   Saldo a Cobrar:
                 </span>
                 <span className="font-black text-rose-600 text-sm">
-                  R$ {debtInfo.totalDebt.toFixed(2)}
+                  R$ {formatCurrency(debtInfo.totalDebt)}
                 </span>
               </div>
               <div className="border-l border-slate-200 pl-3">

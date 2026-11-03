@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LicenseState, StoreSettings } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 import { generatePixCopiaECola, generateQRCodeSVG } from '../services/pixGenerator';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -546,7 +546,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                 </span>
                 <p><strong>Titular:</strong> {adminPix.adminName}</p>
                 <p><strong>Chave PIX:</strong> <span className="font-mono">{adminPix.adminPixKey}</span> ({adminPix.adminPixKeyType})</p>
-                <p><strong>Valor:</strong> R$ {adminPix.monthlyFee.toFixed(2)} / mês</p>
+                <p><strong>Valor:</strong> R$ {formatCurrency(adminPix.monthlyFee)} / mês</p>
                 {adminPix.instructions && (
                   <p className="text-[11px] text-amber-800 italic pt-1 border-t border-amber-200">
                     "{adminPix.instructions}"
@@ -659,7 +659,7 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="font-bold text-emerald-700 text-sm">
-                          R$ {item.amount.toFixed(2)}
+                          R$ {formatCurrency(item.amount)}
                         </span>
                         <span className="block text-[10px] text-emerald-600 font-semibold uppercase">
                           Liberado

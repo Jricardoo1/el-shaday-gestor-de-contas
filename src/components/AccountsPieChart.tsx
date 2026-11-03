@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { PieChart as PieChartIcon, CheckCircle2, Clock, AlertTriangle, DollarSign, Layers } from 'lucide-react';
 import { FiadoEntry, PaymentRecord } from '../types';
+import { formatCurrency } from '../services/storage';
 
 interface AccountsPieChartProps {
   entries: FiadoEntry[];
@@ -70,7 +71,7 @@ export const AccountsPieChart: React.FC<AccountsPieChartProps> = ({
       {
         name: 'Pagas / Quitadas',
         value: viewMode === 'value' ? valorPago : countPago,
-        formattedValue: `R$ ${valorPago.toFixed(2)}`,
+        formattedValue: `R$ ${formatCurrency(valorPago)}`,
         count: countPago,
         color: '#10b981', // Emerald-500
         bgLight: 'bg-emerald-50 text-emerald-800 border-emerald-200',
@@ -81,7 +82,7 @@ export const AccountsPieChart: React.FC<AccountsPieChartProps> = ({
       {
         name: 'Pendentes (Em dia)',
         value: viewMode === 'value' ? valorPendente : countPendente,
-        formattedValue: `R$ ${valorPendente.toFixed(2)}`,
+        formattedValue: `R$ ${formatCurrency(valorPendente)}`,
         count: countPendente,
         color: '#f59e0b', // Amber-500
         bgLight: 'bg-amber-50 text-amber-800 border-amber-200',
@@ -92,7 +93,7 @@ export const AccountsPieChart: React.FC<AccountsPieChartProps> = ({
       {
         name: 'Vencidas (Em atraso)',
         value: viewMode === 'value' ? valorVencido : countVencido,
-        formattedValue: `R$ ${valorVencido.toFixed(2)}`,
+        formattedValue: `R$ ${formatCurrency(valorVencido)}`,
         count: countVencido,
         color: '#ef4444', // Rose-500
         bgLight: 'bg-rose-50 text-rose-800 border-rose-200',
@@ -226,7 +227,7 @@ export const AccountsPieChart: React.FC<AccountsPieChartProps> = ({
                 {viewMode === 'value' ? 'Total Movimentado' : 'Total de Contas'}
               </span>
               <span className="text-sm sm:text-base font-black text-slate-900">
-                {viewMode === 'value' ? `R$ ${totalValue.toFixed(2)}` : `${totalCount} contas`}
+                {viewMode === 'value' ? `R$ ${formatCurrency(totalValue)}` : `${totalCount} contas`}
               </span>
             </div>
           </div>

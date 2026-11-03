@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, DollarSign, CheckCircle2, CreditCard, Banknote, QrCode, AlertTriangle, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Customer, PaymentRecord } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatCurrency } from '../services/storage';
 
 interface NewPaymentModalProps {
   customers: Customer[];
@@ -165,7 +165,7 @@ export const NewPaymentModal: React.FC<NewPaymentModalProps> = ({
                 const cDebt = StorageService.getCustomerDebt(c.id).totalDebt;
                 return (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {cDebt.toFixed(2)}
+                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {formatCurrency(cDebt)}
                   </option>
                 );
               })}
@@ -190,8 +190,8 @@ export const NewPaymentModal: React.FC<NewPaymentModalProps> = ({
                 }`}
               >
                 {debtInfo?.creditBalance && debtInfo.creditBalance > 0
-                  ? `+ R$ ${debtInfo.creditBalance.toFixed(2)} (A favor)`
-                  : `R$ ${totalDebt.toFixed(2)}`}
+                  ? `+ R$ ${formatCurrency(debtInfo.creditBalance)} (A favor)`
+                  : `R$ ${formatCurrency(totalDebt)}`}
               </span>
             </div>
             {totalDebt > 0 ? (
@@ -236,11 +236,11 @@ export const NewPaymentModal: React.FC<NewPaymentModalProps> = ({
                 💡 O valor informado quitará toda a conta e deixará{' '}
                 <strong>
                   R${' '}
-                  {(
+                  {formatCurrency(
                     parseFloat(amount.replace(',', '.')) -
                     totalDebt +
                     (debtInfo?.creditBalance || 0)
-                  ).toFixed(2)}
+                  )}
                 </strong>{' '}
                 em <strong>Crédito Antecipado</strong> para as próximas marmitas deste cliente!
               </div>

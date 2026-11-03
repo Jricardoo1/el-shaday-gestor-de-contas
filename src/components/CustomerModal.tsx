@@ -15,7 +15,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, ProductItem } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 
 interface CustomerModalProps {
   customer?: Customer | null;
@@ -419,7 +419,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                     {products.map((prod) => (
                       <div key={prod.id} className="p-1.5 rounded-lg bg-slate-50 border border-slate-200">
                         <span className="text-[11px] font-semibold text-slate-700 block truncate">
-                          {prod.name} (Tabela: R$ {prod.price.toFixed(2)})
+                          {prod.name} (Tabela: R$ {formatCurrency(prod.price)})
                         </span>
                         <div className="flex items-center gap-1 mt-1">
                           <span className="text-[11px] font-bold text-emerald-700">R$</span>

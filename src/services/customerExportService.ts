@@ -1,5 +1,5 @@
 import { Customer, StoreSettings, FiadoEntry, PaymentRecord } from '../types';
-import { StorageService } from './storage';
+import { StorageService, formatCurrency } from './storage';
 import { CustomerPdfGenerator } from './customerPdfGenerator';
 
 /**
@@ -31,7 +31,7 @@ export const CustomerExportService = {
     };
 
     const formatMoney = (val: number): string => {
-      return val.toFixed(2).replace('.', ',');
+      return formatCurrency(val);
     };
 
     const lines: string[] = [];

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Printer, Send, CheckCircle2, Store, ArrowUp, ArrowDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService } from '../services/storage';
+import { StorageService, formatCurrency } from '../services/storage';
 
 interface ReceiptModalProps {
   customer: Customer;
@@ -55,19 +55,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         doc.line(5, 38, 75, 38);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
-        doc.text(`VALOR: R$ ${entry.amount.toFixed(2)}`, 40, 46, { align: 'center' });
+        doc.text(`VALOR: R$ ${formatCurrency(entry.amount)}`, 40, 46, { align: 'center' });
       } else if (payment) {
         doc.text(`Recibo: #${payment.receiptNumber}`, 6, 30);
         doc.text(`Forma: ${payment.method.toUpperCase()}`, 6, 35);
         doc.line(5, 38, 75, 38);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
-        doc.text(`VALOR PAGO: R$ ${payment.amount.toFixed(2)}`, 40, 46, { align: 'center' });
+        doc.text(`VALOR PAGO: R$ ${formatCurrency(payment.amount)}`, 40, 46, { align: 'center' });
       }
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.text(`Saldo em Aberto: R$ ${debtInfo.totalDebt.toFixed(2)}`, 40, 53, { align: 'center' });
+      doc.text(`Saldo em Aberto: R$ ${formatCurrency(debtInfo.totalDebt)}`, 40, 53, { align: 'center' });
 
       doc.setFontSize(7);
       doc.text('Obrigado pela preferência!', 40, 62, { align: 'center' });
@@ -203,7 +203,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 </div>
                 <div className="flex justify-between text-sm font-bold text-emerald-700">
                   <span>VALOR PAGO:</span>
-                  <span>R$ {payment.amount.toFixed(2)}</span>
+                  <span>R$ {formatCurrency(payment.amount)}</span>
                 </div>
               </div>
             )}
@@ -224,7 +224,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 pt-1">
                   <span>VALOR:</span>
-                  <span>R$ {entry.amount.toFixed(2)}</span>
+                  <span>R$ {formatCurrency(entry.amount)}</span>
                 </div>
               </div>
             )}
@@ -238,7 +238,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                     debtInfo.totalDebt > 0 ? 'text-rose-600 font-bold' : 'text-emerald-700 font-bold'
                   }
                 >
-                  R$ {debtInfo.totalDebt.toFixed(2)}
+                  R$ {formatCurrency(debtInfo.totalDebt)}
                 </span>
               </div>
               {settings.pixKey && (

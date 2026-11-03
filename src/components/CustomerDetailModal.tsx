@@ -32,7 +32,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService, getRelativeDateString, formatDateWithWeekday } from '../services/storage';
+import { StorageService, getRelativeDateString, formatDateWithWeekday, formatCurrency } from '../services/storage';
 import { CustomerPdfGenerator } from '../services/customerPdfGenerator';
 import { CustomerExportService } from '../services/customerExportService';
 import { ConfirmModal } from './ConfirmModal';
@@ -50,6 +50,8 @@ interface CustomerDetailModalProps {
   onNewPayment: (customerId: string) => void;
   onOpenWhatsApp: (customer: Customer, entry?: FiadoEntry) => void;
   onDeleteEntry: (entryId: string) => void;
+  onDeleteEntries?: (entryIds: string[]) => void;
+  onSaveCustomer?: (customer: Customer) => void;
   onUpdateEntry?: (entry: FiadoEntry) => void;
   onNewPrepaidCredit?: (customerId: string) => void;
   onOpenCollectionSuggestions?: (customer?: Customer) => void;
@@ -65,12 +67,16 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   onNewPayment,
   onOpenWhatsApp,
   onDeleteEntry,
+  onDeleteEntries,
+  onSaveCustomer,
   onUpdateEntry,
   onNewPrepaidCredit,
   onOpenCollectionSuggestions,
 }) => {
   const [activeTab, setActiveTab] = useState<'fiados' | 'fechamento_mensal' | 'pagamentos'>('fechamento_mensal');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showDeleteBatchConfirm, setShowDeleteBatchConfirm] = useState(false);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const debtInfo = StorageService.getCustomerDebt(customer.id);
   const payments = StorageService.getPayments().filter((p) => p.customerId === customer.id);
@@ -227,6 +233,34 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     }
   };
 
+  const handleExecuteDeleteBatch = () => {
+    if (selectedEntryIds.length === 0) return;
+    const count = selectedEntryIds.length;
+    if (onDeleteEntries) {
+      onDeleteEntries(selectedEntryIds);
+    } else {
+      selectedEntryIds.forEach((id) => onDeleteEntry(id));
+      StorageService.deleteFiadoEntries(selectedEntryIds);
+    }
+    setSelectedEntryIds([]);
+    setShowDeleteBatchConfirm(false);
+    setRefreshKey((k) => k + 1);
+    setSuccessBanner(`${count} compras marcadas do mês foram excluídas de uma só vez com sucesso! O saldo foi recalculado.`);
+    setTimeout(() => setSuccessBanner(null), 4000);
+  };
+
+  const handleSaveChanges = () => {
+    if (onSaveCustomer) {
+      onSaveCustomer(customer);
+    } else {
+      StorageService.saveCustomer(customer);
+    }
+    StorageService.syncWithCloud().catch(() => {});
+    setSuccessBanner('Todas as alterações e lançamentos desta conta foram salvos e sincronizados com sucesso!');
+    setRefreshKey((k) => k + 1);
+    setTimeout(() => setSuccessBanner(null), 3500);
+  };
+
   const handleConfirmMonthlyClosing = () => {
     if (selectedEntryIds.length === 0) return;
 
@@ -273,14 +307,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     const lines = entriesToReport
       .map((e) => {
         const d = new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR');
-        return `• ${d}: ${e.description} - R$ ${e.amount.toFixed(2)}`;
+        return `• ${d}: ${e.description} - R$ ${formatCurrency(e.amount)}`;
       })
       .join('\n');
 
     const totalPeriod = entriesToReport.reduce((acc, e) => acc + e.amount, 0);
     const balanceRemaining = debtInfo.totalDebt;
 
-    const msg = `🍱 *FECHAMENTO MENSAL DE MARMITEX - ${settings.storeName || 'RESTAURANTE'}*\nCliente: *${customer.name}*\nPeríodo: *${formatMonthLabel(selectedMonth)}*\n\n📋 *Detalhamento dos Pedidos por Dia:*\n${lines}\n\n━━━━━━━━━━━━━━━━━━━━\n💰 *Total do Período: R$ ${totalPeriod.toFixed(2)}*\n📊 *Saldo em Aberto a Pagar: R$ ${balanceRemaining.toFixed(2)}*\n\n${
+    const msg = `🍱 *FECHAMENTO MENSAL DE MARMITEX - ${settings.storeName || 'RESTAURANTE'}*\nCliente: *${customer.name}*\nPeríodo: *${formatMonthLabel(selectedMonth)}*\n\n📋 *Detalhamento dos Pedidos por Dia:*\n${lines}\n\n━━━━━━━━━━━━━━━━━━━━\n💰 *Total do Período: R$ ${formatCurrency(totalPeriod)}*\n📊 *Saldo em Aberto a Pagar: R$ ${formatCurrency(balanceRemaining)}*\n\n${
       settings.pixKey ? `🔑 *Chave PIX para Acerto:* ${settings.pixKey}\n\n` : ''
     }Muito obrigado pela parceria e preferência! Bom apetite.`;
 
@@ -463,13 +497,41 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
               <Trash2 className="w-4 h-4" />
             </button>
             <button
+              type="button"
+              onClick={handleSaveChanges}
+              title="Salvar e sincronizar todas as alterações feitas nesta conta"
+              className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-1"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span className="hidden sm:inline">Salvar Alterações</span>
+            </button>
+            <button
               onClick={onClose}
-              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 ml-1"
+              title="Fechar Janela"
+              aria-label="Fechar"
+              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
+
+        {/* Notificação de Sucesso */}
+        {successBanner && (
+          <div className="mx-4 sm:mx-6 mt-3 p-3 bg-emerald-100/90 border-2 border-emerald-400 rounded-xl text-emerald-950 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in shadow-xs">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>{successBanner}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuccessBanner(null)}
+              className="text-emerald-700 hover:text-emerald-950 p-0.5 rounded cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Debt Summary Banner */}
         <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-6 flex flex-wrap items-center justify-between gap-4">
@@ -481,7 +543,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   Crédito Antecipado Disponível
                 </span>
                 <span className="text-2xl font-black text-emerald-600">
-                  + R$ {debtInfo.creditBalance.toFixed(2)}
+                  + R$ {formatCurrency(debtInfo.creditBalance)}
                 </span>
               </div>
             )}
@@ -496,11 +558,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     debtInfo.totalDebt > 0 ? 'text-rose-600' : 'text-slate-700'
                   }`}
                 >
-                  R$ {debtInfo.totalDebt.toFixed(2)}
+                  R$ {formatCurrency(debtInfo.totalDebt)}
                 </span>
                 {customer.creditLimit && (
                   <span className="text-xs text-slate-400">
-                    (Limite: R$ {customer.creditLimit.toFixed(2)})
+                    (Limite: R$ {formatCurrency(customer.creditLimit)})
                   </span>
                 )}
               </div>
@@ -692,7 +754,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
                   <span>
-                    Fechamento de <strong>R$ {lastClosedPayment.amount.toFixed(2)}</strong> baixado
+                    Fechamento de <strong>R$ {formatCurrency(lastClosedPayment.amount)}</strong> baixado
                     com sucesso no caixa! Recibo: {lastClosedPayment.receiptNumber}
                   </span>
                 </div>
@@ -744,18 +806,29 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   type="button"
                   onClick={handleSelectAllUnpaidOfMonth}
                   disabled={unpaidMonthEntries.length === 0}
-                  className="py-1 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition disabled:opacity-50"
+                  className="py-1 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition disabled:opacity-50 cursor-pointer"
                 >
                   Marcar Todas do Mês ({unpaidMonthEntries.length})
                 </button>
                 {selectedEntryIds.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleDeselectAll}
-                    className="py-1 px-2 rounded-lg text-slate-500 hover:text-slate-800 transition"
-                  >
-                    Desmarcar
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteBatchConfirm(true)}
+                      className="py-1 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-bold border border-rose-300 transition flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer"
+                      title="Excluir todas as compras marcadas deste mês de uma só vez"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Excluir Todas do Mês ({selectedEntryIds.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAll}
+                      className="py-1 px-2 rounded-lg text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                    >
+                      Desmarcar
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -816,7 +889,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                           </p>
                           {entry.paidFromCredit && entry.paidFromCredit > 0 && (
                             <span className="text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-1.5 py-0.2 rounded-md inline-flex items-center gap-1 mt-1">
-                              💳 Abatido do Crédito (R$ {entry.paidFromCredit.toFixed(2)})
+                              💳 Abatido do Crédito (R$ {formatCurrency(entry.paidFromCredit)})
                             </span>
                           )}
                           {entry.categories && entry.categories.length > 0 && (
@@ -841,16 +914,16 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
                           <span className="text-xs font-bold text-slate-800 block">
-                            R$ {entry.amount.toFixed(2)}
+                            R$ {formatCurrency(entry.amount)}
                           </span>
                           {entry.discountType && entry.discountType !== 'none' && entry.discountValue !== undefined && entry.discountValue > 0 && (
                             <span className="text-[10px] text-amber-700 font-bold block">
-                              Desc: {entry.discountType === 'percent' ? `${entry.discountValue}%` : `R$ ${Number(entry.discountValue).toFixed(2)}`}
+                              Desc: {entry.discountType === 'percent' ? `${entry.discountValue}%` : `R$ ${formatCurrency(entry.discountValue)}`}
                             </span>
                           )}
                           {!isPaid && (
                             <span className="text-[11px] font-black text-rose-600">
-                              A Pagar: R$ {remaining.toFixed(2)}
+                              A Pagar: R$ {formatCurrency(remaining)}
                             </span>
                           )}
                         </div>
@@ -896,15 +969,24 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     {selectedEntryIds.length} compras marcadas para fechamento
                   </span>
                   <div className="text-lg font-black text-white">
-                    Total a Baixar: R$ {selectedTotal.toFixed(2)}
+                    Total a Baixar: R$ {formatCurrency(selectedTotal)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteBatchConfirm(true)}
+                    className="py-2.5 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-md"
+                    title="Excluir todas as compras selecionadas deste mês de uma só vez"
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                    <span>Excluir Todas do Mês ({selectedEntryIds.length})</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowBreakdownModal(true)}
-                    className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+                    className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
                     title="Conferir quantas marmitas e bebidas compõem este fechamento"
                   >
                     <PackageCheck className="w-4 h-4" />
@@ -983,7 +1065,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       <p className="text-sm font-semibold text-slate-800">{entry.description}</p>
                       {entry.paidFromCredit && entry.paidFromCredit > 0 && (
                         <span className="text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-1">
-                          💳 Abatido do Crédito (R$ {entry.paidFromCredit.toFixed(2)})
+                          💳 Abatido do Crédito (R$ {formatCurrency(entry.paidFromCredit)})
                         </span>
                       )}
                       {entry.categories && entry.categories.length > 0 && (
@@ -1004,17 +1086,17 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       )}
                       {entry.discountType && entry.discountType !== 'none' && entry.discountValue !== undefined && entry.discountValue > 0 && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md mt-1">
-                          🏷️ Desconto: {entry.discountType === 'percent' ? `${entry.discountValue}%` : `R$ ${Number(entry.discountValue).toFixed(2)}`}
+                          🏷️ Desconto: {entry.discountType === 'percent' ? `${entry.discountValue}%` : `R$ ${formatCurrency(entry.discountValue)}`}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                       <div className="text-left sm:text-right">
-                        <span className="text-[11px] text-slate-400 block">Total: R$ {entry.amount.toFixed(2)}</span>
+                        <span className="text-[11px] text-slate-400 block">Total: R$ {formatCurrency(entry.amount)}</span>
                         {!isPaid && (
                           <span className="text-sm font-black text-rose-600">
-                            Resta: R$ {remaining.toFixed(2)}
+                            Resta: R$ {formatCurrency(remaining)}
                           </span>
                         )}
                       </div>
@@ -1101,7 +1183,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   </div>
 
                   <span className="text-base font-black text-emerald-600">
-                    + R$ {payment.amount.toFixed(2)}
+                    + R$ {formatCurrency(payment.amount)}
                   </span>
                 </div>
               ))
@@ -1132,12 +1214,24 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
               <span>Exportar Planilha (CSV)</span>
             </button>
           </div>
-          <button
-            onClick={onClose}
-            className="py-2 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
-          >
-            Fechar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              className="py-2 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-black text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+              title="Salvar e sincronizar todas as alterações feitas nesta conta"
+            >
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>Salvar Alterações</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs transition cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1164,7 +1258,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   Valor Total do Fechamento
                 </span>
                 <span className="text-2xl font-black text-emerald-900">
-                  R$ {selectedTotal.toFixed(2)}
+                  R$ {formatCurrency(selectedTotal)}
                 </span>
                 <span className="text-xs text-emerald-700 block mt-0.5">
                   ({selectedEntryIds.length} compras de marmitas serão quitadas)
@@ -1252,12 +1346,23 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         title="Excluir Lançamento de Marmitex"
         message={
           entryToDelete
-            ? `Tem certeza que deseja excluir o lançamento de "${entryToDelete.description || 'Marmitex'}" do dia ${entryToDelete.date ? entryToDelete.date.split('-').reverse().join('/') : ''} no valor de R$ ${entryToDelete.amount.toFixed(2)}? O saldo da conta será recalculado imediatamente.`
+            ? `Tem certeza que deseja excluir o lançamento de "${entryToDelete.description || 'Marmitex'}" do dia ${entryToDelete.date ? entryToDelete.date.split('-').reverse().join('/') : ''} no valor de R$ ${formatCurrency(entryToDelete.amount)}? O saldo da conta será recalculado imediatamente.`
             : 'Tem certeza que deseja apagar este lançamento de marmitex? O saldo da conta será recalculado imediatamente.'
         }
         confirmLabel="Sim, Excluir Marmitex"
         onConfirm={handleExecuteDeleteEntry}
         onCancel={() => setEntryToDeleteId(null)}
+      />
+
+      {/* Modal de Confirmação para Excluir Todas as Compras Marcadas do Mês */}
+      <ConfirmModal
+        isOpen={showDeleteBatchConfirm}
+        title="Excluir Todas do Mês de Uma Só Vez"
+        message={`Deseja realmente excluir permanentemente ${selectedEntryIds.length} compras de marmitas marcadas deste mês de uma só vez? O saldo em aberto da conta deste cliente será recalculado automaticamente.`}
+        confirmLabel={`Sim, Excluir Todas (${selectedEntryIds.length})`}
+        isDestructive={true}
+        onConfirm={handleExecuteDeleteBatch}
+        onCancel={() => setShowDeleteBatchConfirm(false)}
       />
 
       {/* Modal de Edição de Lançamento / Marmitex */}

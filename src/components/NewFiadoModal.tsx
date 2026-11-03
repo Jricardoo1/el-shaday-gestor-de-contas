@@ -18,7 +18,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, FiadoEntry, ProductItem } from '../types';
-import { StorageService, getRelativeDateString, getEndOfMonthDate, getDay5DueDate } from '../services/storage';
+import { StorageService, getRelativeDateString, getEndOfMonthDate, getDay5DueDate, formatCurrency } from '../services/storage';
 import { PRODUCT_CATEGORIES, getCategoryMeta } from '../constants/categories';
 
 interface NewFiadoModalProps {
@@ -198,11 +198,11 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
 
     if (kgDirectMoney) {
       mealPrice = parseFloat(kgDirectMoney.replace(',', '.'));
-      label = `Almoço no KG (R$ ${mealPrice.toFixed(2)})`;
+      label = `Almoço no KG (R$ ${formatCurrency(mealPrice)})`;
     } else if (kgGrams) {
       const g = parseFloat(kgGrams.replace(',', '.'));
       mealPrice = (g / 1000) * activeKgRate;
-      label = `Almoço no KG (${g}g a R$ ${activeKgRate.toFixed(2)}/kg = R$ ${mealPrice.toFixed(2)})`;
+      label = `Almoço no KG (${g}g a R$ ${formatCurrency(activeKgRate)}/kg = R$ ${formatCurrency(mealPrice)})`;
     }
 
     if (mealPrice > 0) {
@@ -406,7 +406,7 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                   </span>
                   <span className="text-[11px] text-amber-800">
                     {selectedCustomer.companyDiscountType === 'fixed_per_marmita' &&
-                      `R$ ${(selectedCustomer.companyDiscountPerMarmita || 0).toFixed(2)} de desconto por marmita aplicado automaticamente.`}
+                      `R$ ${formatCurrency(selectedCustomer.companyDiscountPerMarmita || 0)} de desconto por marmita aplicado automaticamente.`}
                     {selectedCustomer.companyDiscountType === 'percent' &&
                       `${selectedCustomer.companyDiscountPercent || 0}% de desconto corporativo no pedido total.`}
                     {selectedCustomer.companyDiscountType === 'custom_table' &&
@@ -470,7 +470,7 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                     <span className="text-xl shrink-0">💳</span>
                     <div>
                       <span className="text-xs font-bold text-emerald-950 block">
-                        Cliente possui R$ {availableCredit.toFixed(2)} de Crédito Antecipado!
+                        Cliente possui R$ {formatCurrency(availableCredit)} de Crédito Antecipado!
                       </span>
                       <span className="text-[11px] text-emerald-800">
                         O cliente já pagou antecipadamente. O consumo pode ser abatido automaticamente deste saldo.
@@ -492,8 +492,8 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                     </span>
                     <span className="text-[11px] text-emerald-700">
                       {amount && parseFloat(amount.replace(',', '.')) > 0
-                        ? `Abaterá R$ ${Math.min(parseFloat(amount.replace(',', '.')), availableCredit).toFixed(2)}. Saldo restante de crédito: R$ ${Math.max(0, availableCredit - parseFloat(amount.replace(',', '.'))).toFixed(2)}`
-                        : `Saldo de crédito disponível: R$ ${availableCredit.toFixed(2)}`}
+                        ? `Abaterá R$ ${formatCurrency(Math.min(parseFloat(amount.replace(',', '.')), availableCredit))}. Saldo restante de crédito: R$ ${formatCurrency(Math.max(0, availableCredit - parseFloat(amount.replace(',', '.'))))}`
+                        : `Saldo de crédito disponível: R$ ${formatCurrency(availableCredit)}`}
                     </span>
                   </div>
                 </label>
@@ -550,11 +550,11 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                       <span className="font-bold text-xs truncate max-w-full">{p.name}</span>
                       <div className="flex items-center gap-1">
                         <span className={`text-[11px] font-black ${qty > 0 ? 'text-emerald-100' : 'text-emerald-700'}`}>
-                          R$ {effPrice.toFixed(2)}
+                          R$ {formatCurrency(effPrice)}
                         </span>
                         {hasDiscount && (
                           <span className={`text-[9px] line-through ${qty > 0 ? 'text-emerald-200' : 'text-slate-400'}`}>
-                            {p.price.toFixed(2)}
+                            {formatCurrency(p.price)}
                           </span>
                         )}
                       </div>
@@ -708,7 +708,7 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
                       )}
                       <span className="font-bold text-[11px] truncate max-w-full">{p.name}</span>
                       <span className={`text-[11px] font-black ${qty > 0 ? 'text-emerald-100' : 'text-emerald-700'}`}>
-                        R$ {effPrice.toFixed(2)}
+                        R$ {formatCurrency(effPrice)}
                       </span>
                     </button>
                   );

@@ -15,7 +15,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { Customer, PaymentRecord, StoreSettings } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatCurrency } from '../services/storage';
 
 interface PrepaidCreditModalProps {
   customers: Customer[];
@@ -211,9 +211,9 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                   <option key={c.id} value={c.id}>
                     {c.name} {c.nickname ? `(${c.nickname})` : ''} —{' '}
                     {cDebt.creditBalance > 0
-                      ? `[Crédito: R$ ${cDebt.creditBalance.toFixed(2)}]`
+                      ? `[Crédito: R$ ${formatCurrency(cDebt.creditBalance)}]`
                       : cDebt.totalDebt > 0
-                      ? `[Débito: R$ ${cDebt.totalDebt.toFixed(2)}]`
+                      ? `[Débito: R$ ${formatCurrency(cDebt.totalDebt)}]`
                       : '[Saldo Zerado]'}
                   </option>
                 );
@@ -226,7 +226,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
             <div>
               <span className="text-slate-500 text-[11px] block">Crédito Atual Disponível:</span>
               <span className="text-base font-black text-emerald-700">
-                R$ {currentCredit.toFixed(2)}
+                R$ {formatCurrency(currentCredit)}
               </span>
             </div>
             <div>
@@ -236,7 +236,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                   currentDebt > 0 ? 'text-rose-600' : 'text-slate-700'
                 }`}
               >
-                R$ {currentDebt.toFixed(2)}
+                R$ {formatCurrency(currentDebt)}
               </span>
             </div>
           </div>
@@ -249,7 +249,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                 Planos Rápidos de Marmitex Pré-paga:
               </label>
               <span className="text-[10px] text-slate-500">
-                Base: R$ {unitPrice.toFixed(2)} / marmita
+                Base: R$ {formatCurrency(unitPrice)} / marmita
               </span>
             </div>
 
@@ -262,7 +262,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                 <span className="text-[10px] font-bold text-emerald-700 uppercase">1 Mês</span>
                 <span className="text-xs font-black text-slate-900 mt-0.5">22 Marmitas</span>
                 <span className="text-[11px] font-black text-emerald-800">
-                  R$ {(22 * unitPrice).toFixed(2)}
+                  R$ {formatCurrency(22 * unitPrice)}
                 </span>
               </button>
 
@@ -274,7 +274,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                 <span className="text-[10px] font-bold text-emerald-700 uppercase">Quinzena</span>
                 <span className="text-xs font-black text-slate-900 mt-0.5">11 Marmitas</span>
                 <span className="text-[11px] font-black text-emerald-800">
-                  R$ {(11 * unitPrice).toFixed(2)}
+                  R$ {formatCurrency(11 * unitPrice)}
                 </span>
               </button>
 
@@ -286,7 +286,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                 <span className="text-[10px] font-bold text-emerald-700 uppercase">1 Semana</span>
                 <span className="text-xs font-black text-slate-900 mt-0.5">5 Marmitas</span>
                 <span className="text-[11px] font-black text-emerald-800">
-                  R$ {(5 * unitPrice).toFixed(2)}
+                  R$ {formatCurrency(5 * unitPrice)}
                 </span>
               </button>
             </div>
@@ -302,7 +302,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
                 onClick={() => handleSelectQuickMoney(v)}
                 className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 border border-slate-200 transition"
               >
-                R$ {v}
+                R$ {formatCurrency(v)}
               </button>
             ))}
           </div>
@@ -338,7 +338,7 @@ export const PrepaidCreditModal: React.FC<PrepaidCreditModalProps> = ({
               </div>
               <div className="flex items-baseline justify-between">
                 <span className="text-2xl font-black">
-                  R$ {simulatedNewCredit.toFixed(2)}
+                  R$ {formatCurrency(simulatedNewCredit)}
                 </span>
                 <span className="text-sm font-bold bg-white/20 px-2 py-0.5 rounded-lg">
                   ~ {simulatedMarmitas} marmitas

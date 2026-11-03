@@ -27,7 +27,7 @@ import {
   Legend,
 } from 'recharts';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings } from '../types';
-import { StorageService, getRelativeDateString } from '../services/storage';
+import { StorageService, getRelativeDateString, formatCurrency } from '../services/storage';
 import { StoreReportsPdfGenerator } from '../services/storeReportsPdfGenerator';
 import { ConsolidatedExportService } from '../services/consolidatedExportService';
 import { AccountsPieChart } from './AccountsPieChart';
@@ -239,11 +239,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           <p className="font-bold text-slate-300 border-b border-slate-800 pb-1">{label}</p>
           <p className="text-rose-400 font-black flex items-center justify-between gap-4">
             <span>Vendas / Fiados:</span>
-            <span>R$ {Number(payload[0]?.value || 0).toFixed(2)}</span>
+            <span>R$ {formatCurrency(payload[0]?.value)}</span>
           </p>
           <p className="text-emerald-400 font-black flex items-center justify-between gap-4">
             <span>Recebido no Caixa:</span>
-            <span>R$ {Number(payload[1]?.value || 0).toFixed(2)}</span>
+            <span>R$ {formatCurrency(payload[1]?.value)}</span>
           </p>
         </div>
       );
@@ -319,7 +319,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900">
-            R$ {totalFiadoEmAberto.toFixed(2)}
+            R$ {formatCurrency(totalFiadoEmAberto)}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
             {customersWithDebt.length} clientes com saldo em aberto
@@ -337,7 +337,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-rose-600">
-            R$ {totalVencido.toFixed(2)}
+            R$ {formatCurrency(totalVencido)}
           </div>
           <p className="text-[11px] text-rose-700 font-semibold mt-1">
             {totalFiadoEmAberto > 0
@@ -357,7 +357,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-amber-700">
-            R$ {totalVencendoHoje.toFixed(2)}
+            R$ {formatCurrency(totalVencendoHoje)}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Bom momento para mandar lembrete</p>
         </div>
@@ -373,7 +373,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             </div>
           </div>
           <div className="text-2xl font-black text-emerald-700">
-            R$ {totalReceivedThisMonth.toFixed(2)}
+            R$ {formatCurrency(totalReceivedThisMonth)}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Total recuperado e pago no caixa</p>
         </div>
@@ -437,13 +437,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           <div>
             <span className="text-slate-500 block font-medium">Vendas no Período:</span>
             <span className="text-sm sm:text-base font-black text-rose-600">
-              R$ {totalVendasPeriodo.toFixed(2)}
+              R$ {formatCurrency(totalVendasPeriodo)}
             </span>
           </div>
           <div>
             <span className="text-slate-500 block font-medium">Recebido no Caixa:</span>
             <span className="text-sm sm:text-base font-black text-emerald-600">
-              R$ {totalRecebidosPeriodo.toFixed(2)}
+              R$ {formatCurrency(totalRecebidosPeriodo)}
             </span>
           </div>
           <div className="col-span-2 sm:col-span-1">
@@ -453,8 +453,8 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                 totalRecebidosPeriodo >= totalVendasPeriodo ? 'text-emerald-700' : 'text-slate-800'
               }`}
             >
-              {totalRecebidosPeriodo >= totalVendasPeriodo ? '+' : ''} R${' '}
-              {(totalRecebidosPeriodo - totalVendasPeriodo).toFixed(2)}
+              {totalRecebidosPeriodo >= totalVendasPeriodo ? '+' : '-'} R${' '}
+              {formatCurrency(Math.abs(totalRecebidosPeriodo - totalVendasPeriodo))}
             </span>
           </div>
         </div>
@@ -565,7 +565,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                 const debt = StorageService.getCustomerDebt(c.id).totalDebt;
                 return (
                   <option key={c.id} value={c.id}>
-                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {debt.toFixed(2)}
+                    {c.name} {c.nickname ? `(${c.nickname})` : ''} — Saldo: R$ {formatCurrency(debt)}
                   </option>
                 );
               })}

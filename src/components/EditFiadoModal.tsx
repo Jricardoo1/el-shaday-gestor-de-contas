@@ -21,6 +21,7 @@ import {
   getRelativeDateString,
   getEndOfMonthDate,
   getDay5DueDate,
+  formatCurrency,
 } from '../services/storage';
 import { PRODUCT_CATEGORIES, getCategoryMeta } from '../constants/categories';
 
@@ -212,7 +213,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
               </div>
               <p className="text-xs text-emerald-200 mt-0.5">
                 Cliente: <strong>{customer.name}</strong> • Saldo atual do lançamento:{' '}
-                <strong>R$ {entry.amount.toFixed(2)}</strong>
+                <strong>R$ {formatCurrency(entry.amount)}</strong>
               </p>
             </div>
           </div>
@@ -352,7 +353,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
                               {prod.name}
                             </span>
                             <span className="text-[11px] text-slate-400">
-                              R$ {prod.price.toFixed(2)}
+                              R$ {formatCurrency(prod.price)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -402,7 +403,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
                                 {prod.name}
                               </span>
                               <span className="text-[11px] text-slate-400">
-                                R$ {prod.price.toFixed(2)}
+                                R$ {formatCurrency(prod.price)}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -445,7 +446,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
                     Subtotal dos Itens (Valor Bruto)
                   </span>
                   <div className="text-xl font-black text-slate-800">
-                    R$ {rawSubtotal.toFixed(2)}
+                    R$ {formatCurrency(rawSubtotal)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
