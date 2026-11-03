@@ -79,14 +79,10 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
     return StorageService.getCustomerCategoryAnalytics(customerId);
   }, [customerId]);
 
-  // If customer has closing preference (day 5 or end of month), automatically set due date!
+  // Data padrão sempre no fim do mês para facilitar, conforme solicitado pelo usuário
   useEffect(() => {
-    if (selectedCustomer?.billingCycle === 'day_5') {
-      setDueDate(getDay5DueDate(date));
-    } else if (selectedCustomer?.billingCycle === 'monthly') {
-      setDueDate(getEndOfMonthDate(date));
-    }
-  }, [customerId, selectedCustomer, date]);
+    setDueDate(getEndOfMonthDate(date));
+  }, [customerId, date]);
 
   // Quick categories
   const marmitexProducts = products.filter((p) => p.category === 'marmitex' && p.id !== 'p_refeicao_kg');
@@ -861,17 +857,25 @@ export const NewFiadoModal: React.FC<NewFiadoModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               <button
                 type="button"
-                onClick={handleDay5}
-                className="py-1.5 px-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[11px] font-black text-emerald-950 border border-emerald-300 transition"
+                onClick={handleEndOfMonth}
+                className={`py-1.5 px-2 rounded-lg text-[11px] font-black border transition flex items-center justify-center gap-1 ${
+                  dueDate === getEndOfMonthDate(date)
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                }`}
               >
-                Dia 5 (Início do Mês)
+                ✓ Fim do Mês (Padrão)
               </button>
               <button
                 type="button"
-                onClick={handleEndOfMonth}
-                className="py-1.5 px-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-[11px] font-black text-emerald-950 border border-emerald-300 transition"
+                onClick={handleDay5}
+                className={`py-1.5 px-2 rounded-lg text-[11px] border transition ${
+                  dueDate === getDay5DueDate(date)
+                    ? 'bg-slate-200 text-slate-900 border-slate-400 font-bold'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 font-medium'
+                }`}
               >
-                Fim do Mês
+                Dia 5 (Início)
               </button>
               <button
                 type="button"

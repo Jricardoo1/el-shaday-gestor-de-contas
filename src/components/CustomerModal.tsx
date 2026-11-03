@@ -56,7 +56,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   );
   const [billingCycle, setBillingCycle] = useState<
     'day_5' | 'monthly' | 'biweekly' | 'weekly' | 'custom'
-  >(customer?.billingCycle || 'day_5');
+  >(customer?.billingCycle || 'monthly');
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -339,8 +339,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   onChange={(e) => setBillingCycle(e.target.value as any)}
                   className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 bg-white"
                 >
+                  <option value="monthly">Mensal (Final do mês - Padrão)</option>
                   <option value="day_5">Todo dia 5 (Início do mês)</option>
-                  <option value="monthly">Mensal (Final do mês)</option>
                   <option value="biweekly">Quinzenal (Acerto a cada 15 dias)</option>
                   <option value="weekly">Semanal (Toda sexta / sábado)</option>
                   <option value="custom">Data Combinada / Avulso</option>
@@ -452,8 +452,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 onChange={(e) => setBillingCycle(e.target.value as any)}
                 className="w-full rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800 bg-white"
               >
+                <option value="monthly">Final do mês (Padrão)</option>
                 <option value="day_5">Todo dia 5 (Início do mês)</option>
-                <option value="monthly">Final do mês</option>
                 <option value="biweekly">Quinzenal (15 dias)</option>
                 <option value="weekly">Semanal</option>
                 <option value="custom">Data livre / Sem preferência</option>

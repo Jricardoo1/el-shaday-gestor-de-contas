@@ -391,13 +391,13 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   </span>
                 )}
                 {customer.billingCycle === 'day_5' && (
-                  <span className="text-[10px] bg-emerald-800 text-emerald-100 font-bold px-2 py-0.5 rounded-full border border-emerald-600">
+                  <span className="text-[10px] bg-slate-800 text-slate-200 font-bold px-2 py-0.5 rounded-full border border-slate-600">
                     Vence Todo Dia 5 (Início do Mês)
                   </span>
                 )}
                 {customer.billingCycle === 'monthly' && (
-                  <span className="text-[10px] bg-emerald-800 text-emerald-100 font-bold px-2 py-0.5 rounded-full border border-emerald-600">
-                    Vence Fim do Mês
+                  <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full border border-emerald-500 shadow-2xs">
+                    Vence Fim do Mês (Padrão)
                   </span>
                 )}
               </div>

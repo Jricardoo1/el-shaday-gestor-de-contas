@@ -83,7 +83,7 @@ const INITIAL_CUSTOMERS: Customer[] = [
     creditLimit: 200,
     notes: 'Cliente muito pontual. Acerta todo dia 5 no início do mês.',
     customerType: 'individual',
-    billingCycle: 'day_5',
+    billingCycle: 'monthly',
     createdAt: '2026-09-15T14:30:00Z',
   },
   {

@@ -453,7 +453,7 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                         </span>
                       )}
                       {customer.billingCycle === 'day_5' && (
-                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded-md">
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300 px-1.5 py-0.2 rounded-md">
                           Vence Dia 5
                         </span>
                       )}
