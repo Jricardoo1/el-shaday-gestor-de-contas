@@ -81,6 +81,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   const debtInfo = StorageService.getCustomerDebt(customer.id);
   const payments = StorageService.getPayments().filter((p) => p.customerId === customer.id);
 
+  const pendingEntries = debtInfo.entries.filter((e) => e.status !== 'paid');
+  const nearestDueDate = pendingEntries.length > 0
+    ? [...pendingEntries].sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))[0]?.dueDate
+    : null;
+  const formattedNearestDueDate = nearestDueDate
+    ? new Date(nearestDueDate + 'T12:00:00').toLocaleDateString('pt-BR')
+    : null;
+
   // Fechamento Mensal states
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<string>();
@@ -390,14 +398,10 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     {customer.nickname}
                   </span>
                 )}
-                {customer.billingCycle === 'day_5' && (
-                  <span className="text-[10px] bg-slate-800 text-slate-200 font-bold px-2 py-0.5 rounded-full border border-slate-600">
-                    Vence Todo Dia 5 (Início do Mês)
-                  </span>
-                )}
-                {customer.billingCycle === 'monthly' && (
-                  <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full border border-emerald-500 shadow-2xs">
-                    Vence Fim do Mês (Padrão)
+                {formattedNearestDueDate && (
+                  <span className="text-[10px] bg-emerald-700 text-white font-bold px-2 py-0.5 rounded-full border border-emerald-500 shadow-2xs flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>Próximo Vencimento: {formattedNearestDueDate}</span>
                   </span>
                 )}
               </div>
@@ -847,6 +851,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   const isChecked = selectedEntryIds.includes(entry.id);
                   const isPaid = entry.status === 'paid';
                   const remaining = Math.max(0, entry.amount - entry.paidAmount);
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const isOverdue = !isPaid && entry.dueDate < todayStr;
+                  const formattedDueDate = entry.dueDate
+                    ? new Date(entry.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')
+                    : null;
 
                   return (
                     <div
@@ -874,10 +883,23 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                         )}
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-black text-slate-900">
                               {formatDateWithWeekday(entry.date)}
                             </span>
+                            {formattedDueDate && (
+                              <span
+                                className={`text-[11px] font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                                  isOverdue
+                                    ? 'bg-rose-100 text-rose-800 border-rose-300 font-extrabold'
+                                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                }`}
+                                title={`Data de vencimento: ${formattedDueDate}`}
+                              >
+                                <Calendar className="w-3 h-3 text-emerald-700 shrink-0" />
+                                <span>Vence: {formattedDueDate}</span>
+                              </span>
+                            )}
                             {isPaid && (
                               <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-md font-bold uppercase">
                                 Quitado no Caixa

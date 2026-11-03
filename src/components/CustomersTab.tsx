@@ -19,6 +19,7 @@ import {
   FileText,
   ArrowDownAZ,
   ArrowUpZA,
+  Calendar,
 } from 'lucide-react';
 import { Customer, StoreSettings } from '../types';
 import { StorageService, formatCurrency } from '../services/storage';
@@ -376,6 +377,15 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
             const isOverdue = debt.overdueCount > 0;
             const hasDebt = debt.totalDebt > 0;
 
+            // Data real de vencimento mais próxima dos lançamentos em aberto
+            const pendingEntries = debt.entries.filter((e) => e.status !== 'paid');
+            const nearestDueDate = pendingEntries.length > 0
+              ? [...pendingEntries].sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))[0]?.dueDate
+              : null;
+            const formattedNearestDueDate = nearestDueDate
+              ? new Date(nearestDueDate + 'T12:00:00').toLocaleDateString('pt-BR')
+              : null;
+
             // Check if customer is maturing in the next 3 days
             const upcomingInfo = upcomingCustomers.find((u) => u.customer.id === customer.id);
 
@@ -452,9 +462,17 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                           {customer.nickname}
                         </span>
                       )}
-                      {customer.billingCycle === 'day_5' && (
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300 px-1.5 py-0.2 rounded-md">
-                          Vence Dia 5
+                      {hasDebt && formattedNearestDueDate && (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                            isOverdue
+                              ? 'bg-rose-50 text-rose-800 border-rose-300 font-extrabold'
+                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          }`}
+                          title={`Data de vencimento do lançamento: ${formattedNearestDueDate}`}
+                        >
+                          <Calendar className="w-3 h-3 text-emerald-700 shrink-0" />
+                          <span>Vence: {formattedNearestDueDate}</span>
                         </span>
                       )}
                     </div>
