@@ -22,7 +22,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Customer, StoreSettings } from '../types';
-import { StorageService, formatCurrency } from '../services/storage';
+import { StorageService, formatCurrency, getRelativeDateString } from '../services/storage';
 import { CustomerExportService } from '../services/customerExportService';
 import { UpcomingDueAlertBanner } from './UpcomingDueAlertBanner';
 
@@ -389,6 +389,16 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
             // Check if customer is maturing in the next 3 days
             const upcomingInfo = upcomingCustomers.find((u) => u.customer.id === customer.id);
 
+            // Saldo específico das compras do mês atual
+            const currentMonthKey = getRelativeDateString(0).slice(0, 7);
+            const currentMonthEntries = debt.entries.filter(
+              (e) => e.date && e.date.startsWith(currentMonthKey)
+            );
+            const currentMonthRemaining = currentMonthEntries.reduce(
+              (acc, e) => acc + Math.max(0, e.amount - e.paidAmount),
+              0
+            );
+
             // Letra inicial para agrupador visual alfabético
             const firstChar = (customer.name || '').trim().charAt(0).toUpperCase();
             const prevChar =
@@ -570,6 +580,14 @@ export const CustomersTab: React.FC<CustomersTabProps> = ({
                         >
                           R$ {formatCurrency(debt.totalDebt)}
                         </span>
+                        {hasDebt && (
+                          <span
+                            title="Saldo a pagar das compras do mês atual"
+                            className="text-[10px] text-emerald-800 font-extrabold block bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5"
+                          >
+                            Mês Atual: R$ {formatCurrency(currentMonthRemaining)}
+                          </span>
+                        )}
                       </>
                     )}
                   </div>

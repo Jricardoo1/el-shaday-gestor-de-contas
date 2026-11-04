@@ -89,6 +89,43 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     ? new Date(nearestDueDate + 'T12:00:00').toLocaleDateString('pt-BR')
     : null;
 
+  const formatMonthLabel = (mStr: string) => {
+    if (mStr === 'all') return 'Todas as Compras em Aberto';
+    const [year, month] = mStr.split('-');
+    const months = [
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
+    const mIndex = parseInt(month, 10) - 1;
+    return `${months[mIndex] || month} de ${year}`;
+  };
+
+  const currentMonthKey = useMemo(() => getRelativeDateString(0).slice(0, 7), []);
+  const currentMonthLabel = useMemo(() => formatMonthLabel(currentMonthKey), [currentMonthKey]);
+
+  // Saldo e total do mês atual (mês corrente)
+  const { currentMonthRemaining, currentMonthTotal } = useMemo(() => {
+    const entriesThisMonth = debtInfo.entries.filter(
+      (e) => e.date && e.date.startsWith(currentMonthKey)
+    );
+    const total = entriesThisMonth.reduce((acc, e) => acc + e.amount, 0);
+    const remaining = entriesThisMonth.reduce(
+      (acc, e) => acc + Math.max(0, e.amount - e.paidAmount),
+      0
+    );
+    return { currentMonthRemaining: remaining, currentMonthTotal: total };
+  }, [debtInfo.entries, currentMonthKey, refreshKey]);
+
   // Fechamento Mensal states
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<string>();
@@ -124,8 +161,15 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     if (onUpdateEntry) {
       onUpdateEntry(updated);
     }
+    // Se o usuário alterou a data para outro mês, atualiza o mês selecionado
+    if (updated.date && updated.date.length >= 7) {
+      const entryMonth = updated.date.slice(0, 7);
+      setSelectedMonth(entryMonth);
+    }
     setRefreshKey((k) => k + 1);
     setEntryToEdit(null);
+    setSuccessBanner('Data do consumo e informações do lançamento atualizadas com sucesso!');
+    setTimeout(() => setSuccessBanner(null), 3500);
   };
 
   // PDF and CSV export generation state
@@ -190,6 +234,16 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         : debtInfo.entries.filter((e) => e.date.startsWith(selectedMonth));
     return [...list].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [debtInfo.entries, selectedMonth, refreshKey]);
+
+  // Saldo e total do mês selecionado
+  const { selectedMonthRemaining, selectedMonthTotal } = useMemo(() => {
+    const total = monthEntries.reduce((acc, e) => acc + e.amount, 0);
+    const remaining = monthEntries.reduce(
+      (acc, e) => acc + Math.max(0, e.amount - e.paidAmount),
+      0
+    );
+    return { selectedMonthRemaining: remaining, selectedMonthTotal: total };
+  }, [monthEntries, refreshKey]);
 
   // Unpaid entries of the selected month
   const unpaidMonthEntries = useMemo(() => {
@@ -257,15 +311,19 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     setTimeout(() => setSuccessBanner(null), 4000);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (onSaveCustomer) {
       onSaveCustomer(customer);
     } else {
       StorageService.saveCustomer(customer);
     }
-    StorageService.syncWithCloud().catch(() => {});
-    setSuccessBanner('Todas as alterações e lançamentos desta conta foram salvos e sincronizados com sucesso!');
+    try {
+      await StorageService.syncWithCloud();
+    } catch (err) {
+      console.warn('Sincronização em nuvem:', err);
+    }
     setRefreshKey((k) => k + 1);
+    setSuccessBanner('Todas as alterações e lançamentos desta conta foram salvos e sincronizados com sucesso!');
     setTimeout(() => setSuccessBanner(null), 3500);
   };
 
@@ -285,27 +343,6 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     setShowClosingModal(false);
     setSelectedEntryIds([]);
     setRefreshKey((k) => k + 1);
-  };
-
-  const formatMonthLabel = (mStr: string) => {
-    if (mStr === 'all') return 'Todas as Compras em Aberto';
-    const [year, month] = mStr.split('-');
-    const months = [
-      'Janeiro',
-      'Fevereiro',
-      'Março',
-      'Abril',
-      'Maio',
-      'Junho',
-      'Julho',
-      'Agosto',
-      'Setembro',
-      'Outubro',
-      'Novembro',
-      'Dezembro',
-    ];
-    const mIndex = parseInt(month, 10) - 1;
-    return `${months[mIndex] || month} de ${year}`;
   };
 
   // Send WhatsApp Monthly statement
@@ -334,34 +371,6 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   const handlePrint = () => {
     handleExportPdf();
   };
-
-  if (entryToEdit) {
-    return (
-      <EditFiadoModal
-        entry={entryToEdit}
-        customer={customer}
-        products={settings.products}
-        onClose={() => setEntryToEdit(null)}
-        onSave={handleSaveEditedEntry}
-      />
-    );
-  }
-
-  if (showBreakdownModal) {
-    return (
-      <MonthlyBreakdownModal
-        customer={customer}
-        settings={settings}
-        entries={entriesForBreakdown}
-        periodLabel={
-          selectedMonth === 'all'
-            ? 'Todas as Compras em Aberto'
-            : formatMonthLabel(selectedMonth)
-        }
-        onClose={() => setShowBreakdownModal(false)}
-      />
-    );
-  }
 
   const positionClass =
     verticalPosition === 'top'
@@ -398,6 +407,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     {customer.nickname}
                   </span>
                 )}
+                {/* Saldo do Mês Atual visível no Cabeçalho */}
+                <span
+                  title={`Saldo a pagar neste mês corrente (${currentMonthLabel})`}
+                  className="text-[11px] bg-emerald-950/90 text-amber-300 font-black px-2.5 py-0.5 rounded-full border border-amber-400/50 shadow-2xs flex items-center gap-1"
+                >
+                  <DollarSign className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Saldo Mês Atual ({currentMonthLabel}): R$ {formatCurrency(currentMonthRemaining)}</span>
+                </span>
                 {formattedNearestDueDate && (
                   <span className="text-[10px] bg-emerald-700 text-white font-bold px-2 py-0.5 rounded-full border border-emerald-500 shadow-2xs flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -539,22 +556,29 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Debt Summary Banner */}
         <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6 flex-wrap">
-            {debtInfo.creditBalance > 0 && (
-              <div>
-                <span className="text-xs text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1">
-                  <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-                  Crédito Antecipado Disponível
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+            {/* Saldo do Mês Atual (Mês Corrente) */}
+            <div className="bg-white px-3.5 py-2 rounded-xl border-2 border-emerald-500 shadow-2xs">
+              <span className="text-[11px] text-emerald-800 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                Saldo do Mês Atual ({currentMonthLabel})
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-2xl font-black text-emerald-950">
+                  R$ {formatCurrency(currentMonthRemaining)}
                 </span>
-                <span className="text-2xl font-black text-emerald-600">
-                  + R$ {formatCurrency(debtInfo.creditBalance)}
-                </span>
+                {currentMonthTotal > currentMonthRemaining && (
+                  <span className="text-[11px] font-bold text-slate-500">
+                    (Total: R$ {formatCurrency(currentMonthTotal)})
+                  </span>
+                )}
               </div>
-            )}
+            </div>
 
+            {/* Saldo em Aberto Geral */}
             <div>
               <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider block">
-                Saldo em Aberto a Pagar
+                Saldo em Aberto a Pagar (Total Geral)
               </span>
               <div className="flex items-baseline gap-2">
                 <span
@@ -571,6 +595,18 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                 )}
               </div>
             </div>
+
+            {debtInfo.creditBalance > 0 && (
+              <div>
+                <span className="text-xs text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1">
+                  <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+                  Crédito Antecipado Disponível
+                </span>
+                <span className="text-2xl font-black text-emerald-600">
+                  + R$ {formatCurrency(debtInfo.creditBalance)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Action shortcuts */}
@@ -793,6 +829,14 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   ))}
                   <option value="all">Todas as Compras em Aberto</option>
                 </select>
+
+                {/* Badge visível com saldo a pagar no mês selecionado */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 text-xs font-bold text-emerald-900 shadow-2xs">
+                  <span>Saldo a Pagar do Mês:</span>
+                  <span className="text-emerald-950 font-black text-sm">
+                    R$ {formatCurrency(selectedMonthRemaining)}
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 text-xs">

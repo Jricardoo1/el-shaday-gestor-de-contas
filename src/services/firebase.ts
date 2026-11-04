@@ -4,10 +4,13 @@ import {
   Firestore,
   doc,
   collection,
+  getDoc,
   getDocs,
   setDoc,
   deleteDoc,
   writeBatch,
+  arrayUnion,
+  arrayRemove,
   getDocFromServer,
   Unsubscribe,
 } from 'firebase/firestore';
@@ -144,6 +147,17 @@ class FirebaseServiceClass {
         },
         { merge: true }
       );
+
+      // If customer was previously in deleted list, remove it
+      const storeRef = doc(db, 'stores', storeId);
+      await setDoc(
+        storeRef,
+        {
+          deletedCustomerIds: arrayRemove(customer.id),
+        },
+        { merge: true }
+      );
+
       this.lastSyncedAt = new Date();
       this.setStatus('online');
     } catch (err) {
@@ -152,14 +166,49 @@ class FirebaseServiceClass {
   }
 
   /**
-   * Deletes a customer from Firestore
+   * Deletes a customer and cascade deletes their entries and payments from Firestore,
+   * while recording a deletion tombstone so sync never restores them.
    */
-  public async deleteCustomer(customerId: string): Promise<void> {
+  public async deleteCustomer(
+    customerId: string,
+    entryIds: string[] = [],
+    paymentIds: string[] = []
+  ): Promise<void> {
     try {
       if (!db) return;
       const storeId = this.getStoreId();
+      const batch = writeBatch(db);
+
+      // 1. Delete customer document
       const customerRef = doc(db, 'stores', storeId, 'customers', customerId);
-      await deleteDoc(customerRef);
+      batch.delete(customerRef);
+
+      // 2. Cascade delete all fiado entries of this customer from cloud
+      entryIds.forEach((eid) => {
+        batch.delete(doc(db, 'stores', storeId, 'entries', eid));
+      });
+
+      // 3. Cascade delete all payments of this customer from cloud
+      paymentIds.forEach((pid) => {
+        batch.delete(doc(db, 'stores', storeId, 'payments', pid));
+      });
+
+      // 4. Record permanent tombstone in store document to prevent any sync resurrection
+      const storeRef = doc(db, 'stores', storeId);
+      const tombstonePayload: Record<string, any> = {
+        deletedCustomerIds: arrayUnion(customerId),
+        updatedAt: new Date().toISOString(),
+      };
+      if (entryIds.length > 0) {
+        tombstonePayload.deletedEntryIds = arrayUnion(...entryIds);
+      }
+      if (paymentIds.length > 0) {
+        tombstonePayload.deletedPaymentIds = arrayUnion(...paymentIds);
+      }
+
+      batch.set(storeRef, tombstonePayload, { merge: true });
+
+      await batch.commit();
       this.lastSyncedAt = new Date();
       this.setStatus('online');
     } catch (err) {
@@ -183,6 +232,17 @@ class FirebaseServiceClass {
         },
         { merge: true }
       );
+
+      // If entry was in deleted list, remove it
+      const storeRef = doc(db, 'stores', storeId);
+      await setDoc(
+        storeRef,
+        {
+          deletedEntryIds: arrayRemove(entry.id),
+        },
+        { merge: true }
+      );
+
       this.lastSyncedAt = new Date();
       this.setStatus('online');
     } catch (err) {
@@ -191,18 +251,62 @@ class FirebaseServiceClass {
   }
 
   /**
-   * Deletes a fiado entry from Firestore
+   * Deletes a fiado entry from Firestore and marks tombstone
    */
   public async deleteFiadoEntry(entryId: string): Promise<void> {
     try {
       if (!db) return;
       const storeId = this.getStoreId();
+      const batch = writeBatch(db);
       const entryRef = doc(db, 'stores', storeId, 'entries', entryId);
-      await deleteDoc(entryRef);
+      batch.delete(entryRef);
+
+      const storeRef = doc(db, 'stores', storeId);
+      batch.set(
+        storeRef,
+        {
+          deletedEntryIds: arrayUnion(entryId),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      await batch.commit();
       this.lastSyncedAt = new Date();
       this.setStatus('online');
     } catch (err) {
       console.warn('Aviso: fiado excluído localmente; sincronização na nuvem pendente:', err);
+    }
+  }
+
+  /**
+   * Deletes multiple fiado entries from Firestore
+   */
+  public async deleteFiadoEntries(entryIds: string[]): Promise<void> {
+    try {
+      if (!db || entryIds.length === 0) return;
+      const storeId = this.getStoreId();
+      const batch = writeBatch(db);
+
+      entryIds.forEach((id) => {
+        batch.delete(doc(db, 'stores', storeId, 'entries', id));
+      });
+
+      const storeRef = doc(db, 'stores', storeId);
+      batch.set(
+        storeRef,
+        {
+          deletedEntryIds: arrayUnion(...entryIds),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      await batch.commit();
+      this.lastSyncedAt = new Date();
+      this.setStatus('online');
+    } catch (err) {
+      console.warn('Aviso: fiados excluídos localmente; sincronização na nuvem pendente:', err);
     }
   }
 
@@ -262,13 +366,19 @@ class FirebaseServiceClass {
     localCustomers: Customer[],
     localEntries: FiadoEntry[],
     localPayments: PaymentRecord[],
-    localSettings: StoreSettings
+    localSettings: StoreSettings,
+    localDeletedCustomerIds: string[] = [],
+    localDeletedEntryIds: string[] = [],
+    localDeletedPaymentIds: string[] = []
   ): Promise<{
     customers: Customer[];
     entries: FiadoEntry[];
     payments: PaymentRecord[];
     settings: StoreSettings;
     syncedCount: number;
+    deletedCustomerIds: string[];
+    deletedEntryIds: string[];
+    deletedPaymentIds: string[];
   }> {
     this.setStatus('syncing');
 
@@ -281,67 +391,153 @@ class FirebaseServiceClass {
           payments: localPayments,
           settings: localSettings,
           syncedCount: 0,
+          deletedCustomerIds: localDeletedCustomerIds,
+          deletedEntryIds: localDeletedEntryIds,
+          deletedPaymentIds: localDeletedPaymentIds,
         };
       }
 
       const storeId = this.getStoreId();
 
+      // 0. Fetch store metadata document to get remote deleted lists
+      const storeRef = doc(db, 'stores', storeId);
+      const storeSnap = await getDoc(storeRef);
+      const remoteDeletedCustomers: string[] = storeSnap.exists()
+        ? (storeSnap.data()?.deletedCustomerIds || [])
+        : [];
+      const remoteDeletedEntries: string[] = storeSnap.exists()
+        ? (storeSnap.data()?.deletedEntryIds || [])
+        : [];
+      const remoteDeletedPayments: string[] = storeSnap.exists()
+        ? (storeSnap.data()?.deletedPaymentIds || [])
+        : [];
+
+      const combinedDeletedCustomers = new Set([
+        ...localDeletedCustomerIds,
+        ...remoteDeletedCustomers,
+      ]);
+      const combinedDeletedEntries = new Set([
+        ...localDeletedEntryIds,
+        ...remoteDeletedEntries,
+      ]);
+      const combinedDeletedPayments = new Set([
+        ...localDeletedPaymentIds,
+        ...remoteDeletedPayments,
+      ]);
+
+      const customersToDeleteFromRemote: string[] = [];
+      const entriesToDeleteFromRemote: string[] = [];
+      const paymentsToDeleteFromRemote: string[] = [];
+
       // 1. Fetch remote customers
       const remoteCustomersMap = new Map<string, Customer>();
       const customersSnap = await getDocs(collection(db, 'stores', storeId, 'customers'));
       customersSnap.forEach((d) => {
-        remoteCustomersMap.set(d.id, d.data() as Customer);
+        if (combinedDeletedCustomers.has(d.id)) {
+          customersToDeleteFromRemote.push(d.id);
+        } else {
+          remoteCustomersMap.set(d.id, d.data() as Customer);
+        }
       });
 
       // 2. Fetch remote entries
       const remoteEntriesMap = new Map<string, FiadoEntry>();
       const entriesSnap = await getDocs(collection(db, 'stores', storeId, 'entries'));
       entriesSnap.forEach((d) => {
-        remoteEntriesMap.set(d.id, d.data() as FiadoEntry);
+        const entry = d.data() as FiadoEntry;
+        if (combinedDeletedEntries.has(d.id) || combinedDeletedCustomers.has(entry.customerId)) {
+          entriesToDeleteFromRemote.push(d.id);
+        } else {
+          remoteEntriesMap.set(d.id, entry);
+        }
       });
 
       // 3. Fetch remote payments
       const remotePaymentsMap = new Map<string, PaymentRecord>();
       const paymentsSnap = await getDocs(collection(db, 'stores', storeId, 'payments'));
       paymentsSnap.forEach((d) => {
-        remotePaymentsMap.set(d.id, d.data() as PaymentRecord);
-      });
-
-      // Merge customers: remote + local
-      const mergedCustomersMap = new Map<string, Customer>(remoteCustomersMap);
-      localCustomers.forEach((c) => {
-        if (!mergedCustomersMap.has(c.id)) {
-          mergedCustomersMap.set(c.id, c);
+        const payment = d.data() as PaymentRecord;
+        if (combinedDeletedPayments.has(d.id) || combinedDeletedCustomers.has(payment.customerId)) {
+          paymentsToDeleteFromRemote.push(d.id);
+        } else {
+          remotePaymentsMap.set(d.id, payment);
         }
       });
-      const mergedCustomers = Array.from(mergedCustomersMap.values());
 
-      // Merge entries: remote + local
-      const mergedEntriesMap = new Map<string, FiadoEntry>(remoteEntriesMap);
-      localEntries.forEach((e) => {
-        if (!mergedEntriesMap.has(e.id)) {
-          mergedEntriesMap.set(e.id, e);
-        }
-      });
-      const mergedEntries = Array.from(mergedEntriesMap.values());
+      // Filter local lists to ensure deleted items are purged
+      const activeLocalCustomers = localCustomers.filter(
+        (c) => !combinedDeletedCustomers.has(c.id)
+      );
+      const activeLocalEntries = localEntries.filter(
+        (e) => !combinedDeletedEntries.has(e.id) && !combinedDeletedCustomers.has(e.customerId)
+      );
+      const activeLocalPayments = localPayments.filter(
+        (p) => !combinedDeletedPayments.has(p.id) && !combinedDeletedCustomers.has(p.customerId)
+      );
 
-      // Merge payments: remote + local
-      const mergedPaymentsMap = new Map<string, PaymentRecord>(remotePaymentsMap);
-      localPayments.forEach((p) => {
-        if (!mergedPaymentsMap.has(p.id)) {
-          mergedPaymentsMap.set(p.id, p);
-        }
-      });
-      const mergedPayments = Array.from(mergedPaymentsMap.values());
+      // Merge function that honors updatedAt and prioritizes local changes
+      const mergeLists = <T extends { id: string; updatedAt?: string; createdAt?: string }>(
+        remoteMap: Map<string, T>,
+        localList: T[]
+      ): T[] => {
+        const resultMap = new Map<string, T>(remoteMap);
+        localList.forEach((localItem) => {
+          const remoteItem = resultMap.get(localItem.id);
+          if (!remoteItem) {
+            // New local item
+            resultMap.set(localItem.id, localItem);
+          } else {
+            const localTimestamp = localItem.updatedAt || localItem.createdAt || '';
+            const remoteTimestamp = remoteItem.updatedAt || remoteItem.createdAt || '';
+            // If local item has no timestamp or local is >= remote, local wins
+            if (!remoteTimestamp || localTimestamp >= remoteTimestamp) {
+              resultMap.set(localItem.id, localItem);
+            }
+          }
+        });
+        return Array.from(resultMap.values());
+      };
 
-      // Batch upload items to cloud
+      // Merge customers: remote + local with local-updates priority
+      const mergedCustomers = mergeLists(remoteCustomersMap, activeLocalCustomers);
+
+      // Merge entries: remote + local with local-updates priority
+      const mergedEntries = mergeLists(remoteEntriesMap, activeLocalEntries);
+
+      // Merge payments: remote + local with local-updates priority
+      const mergedPayments = mergeLists(remotePaymentsMap, activeLocalPayments);
+
+      // Batch upload items to cloud and clean up remote deleted docs
       let writeCount = 0;
       const batch = writeBatch(db);
 
-      // Save store settings
-      const storeRef = doc(db, 'stores', storeId);
-      batch.set(storeRef, { ...localSettings, updatedAt: new Date().toISOString() }, { merge: true });
+      // Save store settings + deleted lists tombstones
+      batch.set(
+        storeRef,
+        {
+          ...localSettings,
+          deletedCustomerIds: Array.from(combinedDeletedCustomers),
+          deletedEntryIds: Array.from(combinedDeletedEntries),
+          deletedPaymentIds: Array.from(combinedDeletedPayments),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
       writeCount++;
+
+      // Purge remotely stored documents that were deleted
+      customersToDeleteFromRemote.forEach((cid) => {
+        batch.delete(doc(db, 'stores', storeId, 'customers', cid));
+        writeCount++;
+      });
+      entriesToDeleteFromRemote.forEach((eid) => {
+        batch.delete(doc(db, 'stores', storeId, 'entries', eid));
+        writeCount++;
+      });
+      paymentsToDeleteFromRemote.forEach((pid) => {
+        batch.delete(doc(db, 'stores', storeId, 'payments', pid));
+        writeCount++;
+      });
 
       mergedCustomers.forEach((cust) => {
         const ref = doc(db, 'stores', storeId, 'customers', cust.id);
@@ -372,17 +568,22 @@ class FirebaseServiceClass {
         payments: mergedPayments,
         settings: localSettings,
         syncedCount: writeCount,
+        deletedCustomerIds: Array.from(combinedDeletedCustomers),
+        deletedEntryIds: Array.from(combinedDeletedEntries),
+        deletedPaymentIds: Array.from(combinedDeletedPayments),
       };
     } catch (err) {
       console.error('Erro na sincronização com Firebase Firestore:', err);
-      // If there's an error in syncing, do a connection test to accurately set status
       this.testConnection();
       return {
-        customers: localCustomers,
-        entries: localEntries,
-        payments: localPayments,
+        customers: localCustomers.filter((c) => !localDeletedCustomerIds.includes(c.id)),
+        entries: localEntries.filter((e) => !localDeletedEntryIds.includes(e.id)),
+        payments: localPayments.filter((p) => !localDeletedPaymentIds.includes(p.id)),
         settings: localSettings,
         syncedCount: 0,
+        deletedCustomerIds: localDeletedCustomerIds,
+        deletedEntryIds: localDeletedEntryIds,
+        deletedPaymentIds: localDeletedPaymentIds,
       };
     }
   }

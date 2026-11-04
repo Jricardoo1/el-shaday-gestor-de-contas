@@ -185,6 +185,7 @@ export const EditFiadoModal: React.FC<EditFiadoModalProps> = ({
       discountType,
       discountValue: discNum,
       categories: finalCats,
+      updatedAt: new Date().toISOString(),
     };
 
     onSave(updated);

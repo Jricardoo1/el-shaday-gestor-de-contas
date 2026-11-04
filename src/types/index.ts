@@ -9,6 +9,7 @@ export interface Customer {
   creditLimit?: number;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
 
   // Empresa / Convênio e Preços Diferenciados
   customerType?: 'individual' | 'empresa';
@@ -31,6 +32,7 @@ export interface FiadoEntry {
   dueDate: string; // YYYY-MM-DD
   status: 'pending' | 'partially_paid' | 'paid' | 'overdue';
   createdAt: string;
+  updatedAt?: string;
   notes?: string;
 
   // Descontos aplicados
@@ -55,6 +57,7 @@ export interface PaymentRecord {
   receiptNumber: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
 
   // Identificação de pagamento/crédito antecipado de marmitas
   isPrepaidCredit?: boolean;
