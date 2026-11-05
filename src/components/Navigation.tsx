@@ -1,8 +1,8 @@
 import React from 'react';
-import { Home, Users, ShoppingBag, DollarSign, BarChart3, ShieldCheck, AlertCircle, PauseCircle } from 'lucide-react';
+import { Home, Users, DollarSign, BarChart3, ShieldCheck, AlertCircle, PauseCircle } from 'lucide-react';
 import { LicenseState } from '../types';
 
-export type NavTab = 'inicio' | 'clientes' | 'fiados' | 'pagamentos' | 'relatorio' | 'licenca';
+export type NavTab = 'inicio' | 'clientes' | 'pagamentos' | 'relatorio' | 'licenca';
 
 interface NavigationProps {
   currentTab: NavTab;
@@ -55,23 +55,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <Users className="w-4 h-4 text-emerald-700" />
             <span>Clientes & Saldos</span>
-          </button>
-
-          <button
-            onClick={() => onSelectTab('fiados')}
-            className={`py-3.5 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 relative ${
-              currentTab === 'fiados'
-                ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4 text-emerald-700" />
-            <span>Contas a Prazo</span>
-            {overdueCount > 0 && (
-              <span className="bg-rose-500 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
-                {overdueCount} vencidos
-              </span>
-            )}
           </button>
 
           <button
@@ -140,25 +123,6 @@ export const Navigation: React.FC<NavigationProps> = ({
         >
           <Users className={`w-5 h-5 ${currentTab === 'clientes' ? 'scale-110' : ''}`} />
           <span className="text-[10px] mt-0.5">Clientes</span>
-        </button>
-
-        <button
-          onClick={() => onSelectTab('fiados')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${
-            currentTab === 'fiados'
-              ? 'text-emerald-700 font-extrabold'
-              : 'text-slate-500 font-medium'
-          }`}
-        >
-          <div className="relative">
-            <ShoppingBag className={`w-5 h-5 ${currentTab === 'fiados' ? 'scale-110' : ''}`} />
-            {overdueCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                {overdueCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] mt-0.5">A Prazo</span>
         </button>
 
         <button

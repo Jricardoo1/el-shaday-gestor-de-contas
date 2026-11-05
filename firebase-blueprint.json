@@ -12,6 +12,7 @@
         "passwordHash": { "type": "string", "description": "Secure salted cryptographic hash of password" },
         "phone": { "type": "string", "description": "WhatsApp contact phone" },
         "role": { "type": "string", "description": "User role (merchant or admin)" },
+        "storeId": { "type": "string", "description": "Identifier of the store associated with this user" },
         "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
         "lastLoginAt": { "type": "string", "description": "ISO timestamp of last login" }
       },
@@ -29,6 +30,7 @@
         "pixKeyType": { "type": "string", "description": "Pix Key type" },
         "city": { "type": "string", "description": "City of the store" },
         "defaultDueDays": { "type": "number", "description": "Default payment term in days" },
+        "products": { "type": "array", "description": "Menu products, prices, and categories" },
         "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
       },
       "required": ["storeName"]

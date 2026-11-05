@@ -12,6 +12,7 @@ import {
   arrayUnion,
   arrayRemove,
   getDocFromServer,
+  onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged, User, Auth } from 'firebase/auth';
@@ -35,6 +36,59 @@ try {
   console.error('Erro ao inicializar Firebase:', err);
 }
 
+export const SHARED_STORE_ID = 'loja_principal';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null
+): void {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo:
+        auth?.currentUser?.providerData?.map((provider) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error:', JSON.stringify(errInfo));
+}
+
 export type SyncStatus = 'idle' | 'connecting' | 'online' | 'offline' | 'syncing' | 'error';
 
 class FirebaseServiceClass {
@@ -42,7 +96,7 @@ class FirebaseServiceClass {
   private status: SyncStatus = 'connecting';
   private statusListeners: Array<(status: SyncStatus) => void> = [];
   private lastSyncedAt: Date | null = null;
-  private unsubs: Unsubscribe[] = [];
+  private realtimeUnsubs: Unsubscribe[] = [];
 
   constructor() {
     // Attempt authentication if available in background, without blocking direct Firestore access
@@ -55,7 +109,7 @@ class FirebaseServiceClass {
             const credential = await signInAnonymously(auth);
             this.currentUser = credential.user;
           } catch (err) {
-            // Anonymous auth disabled or restricted; database operates securely using deviceId partition
+            // Anonymous auth fallback
           }
         }
       });
@@ -86,23 +140,17 @@ class FirebaseServiceClass {
     return this.lastSyncedAt;
   }
 
+  /**
+   * Retorna o ID da loja compartilhada.
+   * Todos os aparelhos, usuários que logarem e aplicativos baixados acessam
+   * a mesma base de dados compartilhada para sincronização total de cardápio, fiados e clientes.
+   */
   public getStoreId(): string {
-    const authUserId = AuthService.getActiveUserId();
-    if (authUserId) {
-      return authUserId;
+    const user = AuthService.getCurrentUser();
+    if (user?.storeId && user.storeId.trim()) {
+      return user.storeId.trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
     }
-    if (this.currentUser?.uid) {
-      return this.currentUser.uid;
-    }
-    try {
-      const KEY = 'fiado_device_unique_id_v1';
-      const localId = localStorage.getItem(KEY);
-      if (localId && localId.trim()) {
-        const cleaned = localId.trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
-        if (cleaned.length > 0) return cleaned;
-      }
-    } catch {}
-    return 'loja_principal';
+    return SHARED_STORE_ID;
   }
 
   /**
@@ -129,6 +177,141 @@ class FirebaseServiceClass {
       this.setStatus('online');
       return true;
     }
+  }
+
+  /**
+   * Inscreve a aplicação para sincronização em tempo real (onSnapshot).
+   * Sempre que qualquer usuário, aparelho ou aplicativo baixado cadastrar um fiado,
+   * receber pagamento, alterar dados de cliente ou editar o cardápio (produtos e preços),
+   * todos os outros dispositivos recebem a alteração instantaneamente.
+   */
+  public subscribeToRealtimeSync(callbacks: {
+    onSettingsUpdate?: (settings: StoreSettings) => void;
+    onCustomersUpdate?: (customers: Customer[]) => void;
+    onEntriesUpdate?: (entries: FiadoEntry[]) => void;
+    onPaymentsUpdate?: (payments: PaymentRecord[]) => void;
+  }): () => void {
+    if (!db) return () => {};
+
+    // Cancela listeners anteriores se houver
+    this.cleanup();
+
+    const storeId = this.getStoreId();
+
+    // 1. Ouvir configurações e cardápio de produtos da loja em tempo real
+    const storePath = `stores/${storeId}`;
+    try {
+      const unsubStore = onSnapshot(
+        doc(db, 'stores', storeId),
+        (snap) => {
+          if (snap.exists() && callbacks.onSettingsUpdate) {
+            const data = snap.data();
+            const remoteSettings: StoreSettings = {
+              storeName: data.storeName || 'Marmitaria & Restaurante',
+              ownerName: data.ownerName || 'Gerente',
+              phone: data.phone || '',
+              pixKey: data.pixKey || '',
+              pixKeyType: data.pixKeyType || 'email',
+              city: data.city || 'SAO PAULO',
+              defaultDueDays: data.defaultDueDays || 15,
+              products: Array.isArray(data.products) ? data.products : undefined,
+              updatedAt: data.updatedAt,
+              backupReminderFrequency: data.backupReminderFrequency,
+              lastBackupDate: data.lastBackupDate,
+              dismissedBackupReminderUntil: data.dismissedBackupReminderUntil,
+            };
+            callbacks.onSettingsUpdate(remoteSettings);
+            this.lastSyncedAt = new Date();
+            this.setStatus('online');
+          }
+        },
+        (err) => {
+          handleFirestoreError(err, OperationType.GET, storePath);
+        }
+      );
+      this.realtimeUnsubs.push(unsubStore);
+    } catch (e) {
+      console.warn('Erro ao conectar listener em tempo real da loja:', e);
+    }
+
+    // 2. Ouvir clientes em tempo real
+    const customersPath = `stores/${storeId}/customers`;
+    try {
+      const unsubCustomers = onSnapshot(
+        collection(db, 'stores', storeId, 'customers'),
+        (snap) => {
+          if (callbacks.onCustomersUpdate) {
+            const list: Customer[] = [];
+            snap.forEach((d) => {
+              list.push(d.data() as Customer);
+            });
+            callbacks.onCustomersUpdate(list);
+            this.lastSyncedAt = new Date();
+            this.setStatus('online');
+          }
+        },
+        (err) => {
+          handleFirestoreError(err, OperationType.GET, customersPath);
+        }
+      );
+      this.realtimeUnsubs.push(unsubCustomers);
+    } catch (e) {
+      console.warn('Erro ao conectar listener de clientes:', e);
+    }
+
+    // 3. Ouvir fiados / contas a prazo em tempo real
+    const entriesPath = `stores/${storeId}/entries`;
+    try {
+      const unsubEntries = onSnapshot(
+        collection(db, 'stores', storeId, 'entries'),
+        (snap) => {
+          if (callbacks.onEntriesUpdate) {
+            const list: FiadoEntry[] = [];
+            snap.forEach((d) => {
+              list.push(d.data() as FiadoEntry);
+            });
+            callbacks.onEntriesUpdate(list);
+            this.lastSyncedAt = new Date();
+            this.setStatus('online');
+          }
+        },
+        (err) => {
+          handleFirestoreError(err, OperationType.GET, entriesPath);
+        }
+      );
+      this.realtimeUnsubs.push(unsubEntries);
+    } catch (e) {
+      console.warn('Erro ao conectar listener de fiados:', e);
+    }
+
+    // 4. Ouvir pagamentos e abatimentos em tempo real
+    const paymentsPath = `stores/${storeId}/payments`;
+    try {
+      const unsubPayments = onSnapshot(
+        collection(db, 'stores', storeId, 'payments'),
+        (snap) => {
+          if (callbacks.onPaymentsUpdate) {
+            const list: PaymentRecord[] = [];
+            snap.forEach((d) => {
+              list.push(d.data() as PaymentRecord);
+            });
+            callbacks.onPaymentsUpdate(list);
+            this.lastSyncedAt = new Date();
+            this.setStatus('online');
+          }
+        },
+        (err) => {
+          handleFirestoreError(err, OperationType.GET, paymentsPath);
+        }
+      );
+      this.realtimeUnsubs.push(unsubPayments);
+    } catch (e) {
+      console.warn('Erro ao conectar listener de pagamentos:', e);
+    }
+
+    return () => {
+      this.cleanup();
+    };
   }
 
   /**
@@ -399,18 +582,52 @@ class FirebaseServiceClass {
 
       const storeId = this.getStoreId();
 
-      // 0. Fetch store metadata document to get remote deleted lists
+      // 0. Fetch store metadata document to get remote deleted lists and settings (including cardápio)
       const storeRef = doc(db, 'stores', storeId);
       const storeSnap = await getDoc(storeRef);
-      const remoteDeletedCustomers: string[] = storeSnap.exists()
-        ? (storeSnap.data()?.deletedCustomerIds || [])
-        : [];
-      const remoteDeletedEntries: string[] = storeSnap.exists()
-        ? (storeSnap.data()?.deletedEntryIds || [])
-        : [];
-      const remoteDeletedPayments: string[] = storeSnap.exists()
-        ? (storeSnap.data()?.deletedPaymentIds || [])
-        : [];
+      const storeData = storeSnap.exists() ? storeSnap.data() : null;
+      const remoteDeletedCustomers: string[] = storeData?.deletedCustomerIds || [];
+      const remoteDeletedEntries: string[] = storeData?.deletedEntryIds || [];
+      const remoteDeletedPayments: string[] = storeData?.deletedPaymentIds || [];
+
+      // Sincronização inteligente de Cardápio (produtos e preços) e Configurações
+      let mergedSettings: StoreSettings = { ...localSettings };
+      if (storeData) {
+        const remoteUpdated = storeData.updatedAt || '';
+        const localUpdated = localSettings.updatedAt || '';
+
+        // Se houver produtos no cardápio da nuvem
+        if (Array.isArray(storeData.products) && storeData.products.length > 0) {
+          // Se o cardápio da nuvem for mais recente ou igual, ou se o local não tiver sido editado
+          if (!localSettings.updatedAt || remoteUpdated >= localUpdated) {
+            mergedSettings = {
+              ...localSettings,
+              storeName: storeData.storeName || localSettings.storeName,
+              ownerName: storeData.ownerName || localSettings.ownerName,
+              phone: storeData.phone || localSettings.phone,
+              pixKey: storeData.pixKey || localSettings.pixKey,
+              pixKeyType: storeData.pixKeyType || localSettings.pixKeyType,
+              city: storeData.city || localSettings.city,
+              defaultDueDays: storeData.defaultDueDays || localSettings.defaultDueDays,
+              products: storeData.products,
+              updatedAt: remoteUpdated || new Date().toISOString(),
+            };
+          } else {
+            // Local é mais recente: envia produtos locais atualizados para a nuvem
+            mergedSettings = {
+              ...localSettings,
+              products: localSettings.products,
+              updatedAt: localUpdated || new Date().toISOString(),
+            };
+          }
+        } else if (localSettings.products && localSettings.products.length > 0) {
+          // Nuvem ainda não tinha produtos, sobe os produtos locais
+          mergedSettings = {
+            ...localSettings,
+            updatedAt: localUpdated || new Date().toISOString(),
+          };
+        }
+      }
 
       const combinedDeletedCustomers = new Set([
         ...localDeletedCustomerIds,
@@ -511,15 +728,15 @@ class FirebaseServiceClass {
       let writeCount = 0;
       const batch = writeBatch(db);
 
-      // Save store settings + deleted lists tombstones
+      // Save store settings (with latest cardápio) + deleted lists tombstones
       batch.set(
         storeRef,
         {
-          ...localSettings,
+          ...mergedSettings,
           deletedCustomerIds: Array.from(combinedDeletedCustomers),
           deletedEntryIds: Array.from(combinedDeletedEntries),
           deletedPaymentIds: Array.from(combinedDeletedPayments),
-          updatedAt: new Date().toISOString(),
+          updatedAt: mergedSettings.updatedAt || new Date().toISOString(),
         },
         { merge: true }
       );
@@ -566,7 +783,7 @@ class FirebaseServiceClass {
         customers: mergedCustomers,
         entries: mergedEntries,
         payments: mergedPayments,
-        settings: localSettings,
+        settings: mergedSettings,
         syncedCount: writeCount,
         deletedCustomerIds: Array.from(combinedDeletedCustomers),
         deletedEntryIds: Array.from(combinedDeletedEntries),
@@ -589,8 +806,12 @@ class FirebaseServiceClass {
   }
 
   public cleanup() {
-    this.unsubs.forEach((unsub) => unsub());
-    this.unsubs = [];
+    this.realtimeUnsubs.forEach((unsub) => {
+      try {
+        unsub();
+      } catch {}
+    });
+    this.realtimeUnsubs = [];
   }
 }
 

@@ -352,10 +352,10 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-500">Saldo em aberto</span>
             <button
-              onClick={() => onSelectTab('fiados')}
+              onClick={() => onSelectTab('clientes')}
               className="text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-0.5"
             >
-              <span>Ver fiados</span>
+              <span>Ver clientes</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -379,7 +379,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               {countVencidos} {countVencidos === 1 ? 'compra atrasada' : 'compras atrasadas'}
             </span>
             <button
-              onClick={() => onSelectTab('fiados')}
+              onClick={() => onSelectTab('clientes')}
               className="text-rose-700 hover:text-rose-900 font-bold flex items-center gap-0.5"
             >
               <span>Cobrar</span>

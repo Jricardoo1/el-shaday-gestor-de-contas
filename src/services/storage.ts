@@ -827,10 +827,47 @@ export const StorageService = {
   },
 
   saveStoreSettings(settings: StoreSettings): StoreSettings {
-    save(STORAGE_KEYS.SETTINGS, settings);
+    const withTimestamp: StoreSettings = {
+      ...settings,
+      updatedAt: new Date().toISOString(),
+    };
+    save(STORAGE_KEYS.SETTINGS, withTimestamp);
     this.updateAdminSelfRecord();
-    FirebaseService.saveStoreSettings(settings);
-    return settings;
+    FirebaseService.saveStoreSettings(withTimestamp);
+    return withTimestamp;
+  },
+
+  /**
+   * Salva configurações recebidas via sincronização em tempo real localmente
+   * sem disparar novo push redundante para o Firestore.
+   */
+  saveStoreSettingsLocally(settings: StoreSettings): StoreSettings {
+    const current = this.getStoreSettings();
+    const merged: StoreSettings = {
+      ...current,
+      ...settings,
+      products: Array.isArray(settings.products) && settings.products.length > 0 ? settings.products : current.products,
+    };
+    save(STORAGE_KEYS.SETTINGS, merged);
+    return merged;
+  },
+
+  saveCustomersLocally(customers: Customer[]) {
+    const deletedCustomerIds = load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []);
+    const filtered = customers.filter((c) => !deletedCustomerIds.includes(c.id));
+    save(STORAGE_KEYS.CUSTOMERS, filtered);
+  },
+
+  saveEntriesLocally(entries: FiadoEntry[]) {
+    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
+    const filtered = entries.filter((e) => !deletedEntryIds.includes(e.id));
+    save(STORAGE_KEYS.ENTRIES, filtered);
+  },
+
+  savePaymentsLocally(payments: PaymentRecord[]) {
+    const deletedPaymentIds = load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []);
+    const filtered = payments.filter((p) => !deletedPaymentIds.includes(p.id));
+    save(STORAGE_KEYS.PAYMENTS, filtered);
   },
 
   /**

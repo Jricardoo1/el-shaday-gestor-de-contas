@@ -7,12 +7,12 @@ import React, { useState, useEffect } from 'react';
 import { Customer, FiadoEntry, PaymentRecord, StoreSettings, LicenseState, UserAccount } from './types';
 import { StorageService } from './services/storage';
 import { AuthService } from './services/auth';
+import { FirebaseService } from './services/firebase';
 import { Header } from './components/Header';
 import { Navigation, NavTab } from './components/Navigation';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { HomeTab } from './components/HomeTab';
 import { CustomersTab } from './components/CustomersTab';
-import { FiadosTab } from './components/FiadosTab';
 import { PaymentsTab } from './components/PaymentsTab';
 import { ReportsTab } from './components/ReportsTab';
 import { CustomerModal } from './components/CustomerModal';
@@ -98,23 +98,53 @@ export default function App() {
 
   useEffect(() => {
     reloadData();
-    // Subscribe to authentication changes (login, logout, account switch)
-    const unsub = AuthService.onAuthChange((user) => {
+
+    // 1. Sincronização inicial completa com o Firebase Firestore ao abrir o app
+    StorageService.syncWithCloud()
+      .then(() => {
+        reloadData();
+      })
+      .catch((err) => {
+        console.warn('Sincronização inicial na nuvem:', err);
+      });
+
+    // 2. Ouvinte de autenticação e troca de usuários
+    const unsubAuth = AuthService.onAuthChange((user) => {
       setCurrentUser(user);
       reloadData();
-      if (user) {
-        StorageService.syncWithCloud()
-          .then(() => {
-            reloadData();
-          })
-          .catch((err) => {
-            console.warn('Sincronização em nuvem da conta:', err);
-          });
-      }
+      StorageService.syncWithCloud()
+        .then(() => {
+          reloadData();
+        })
+        .catch((err) => {
+          console.warn('Sincronização em nuvem da conta:', err);
+        });
+    });
+
+    // 3. Sincronização viva em tempo real (onSnapshot)
+    // Sincroniza cardápio, valores, fiados, pagamentos e clientes instantaneamente para todos os apps baixados
+    const unsubRealtime = FirebaseService.subscribeToRealtimeSync({
+      onSettingsUpdate: (remoteSettings) => {
+        const merged = StorageService.saveStoreSettingsLocally(remoteSettings);
+        setSettings(merged);
+      },
+      onCustomersUpdate: (remoteCustomers) => {
+        StorageService.saveCustomersLocally(remoteCustomers);
+        setCustomers(StorageService.getCustomers());
+      },
+      onEntriesUpdate: (remoteEntries) => {
+        StorageService.saveEntriesLocally(remoteEntries);
+        setEntries(StorageService.getFiadoEntries());
+      },
+      onPaymentsUpdate: (remotePayments) => {
+        StorageService.savePaymentsLocally(remotePayments);
+        setPayments(StorageService.getPayments());
+      },
     });
 
     return () => {
-      unsub();
+      unsubAuth();
+      unsubRealtime();
     };
   }, []);
 
@@ -455,19 +485,6 @@ export default function App() {
             onOpenWhatsApp={(c) => handleOpenWhatsApp(c)}
             onOpenBroadcast={handleOpenBroadcast}
             onNewPrepaidCredit={(cId) => handleOpenPrepaidCredit(cId)}
-          />
-        )}
-
-        {currentTab === 'fiados' && (
-          <FiadosTab
-            entries={entries}
-            customers={customers}
-            settings={settings}
-            onNewFiado={() => handleOpenNewFiado(undefined)}
-            onNewPayment={(cId) => handleOpenNewPayment(cId)}
-            onOpenWhatsApp={(c, e) => handleOpenWhatsApp(c, e)}
-            onDeleteEntry={handleDeleteEntry}
-            onSelectCustomer={(c) => handleOpenCustomerDetail(c)}
           />
         )}
 

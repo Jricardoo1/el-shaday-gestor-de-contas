@@ -82,6 +82,7 @@ export interface StoreSettings {
   defaultDueDays: number;
   deviceId?: string;
   products?: ProductItem[];
+  updatedAt?: string;
 
   // Backup e Lembrete
   backupReminderFrequency?: 'daily' | 'weekly' | 'monthly' | 'disabled';
@@ -158,6 +159,7 @@ export interface UserAccount {
   phone?: string;
   city?: string;
   role: 'merchant' | 'admin';
+  storeId?: string;
   createdAt: string;
   lastLoginAt: string;
 }

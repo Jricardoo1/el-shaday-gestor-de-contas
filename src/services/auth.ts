@@ -183,6 +183,7 @@ class AuthServiceClass {
       phone: params.phone?.trim() || '',
       city: params.city?.trim() || 'SAO PAULO',
       role: 'merchant',
+      storeId: 'loja_principal',
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
     };
@@ -227,6 +228,7 @@ class AuthServiceClass {
     // Update lastLoginAt
     const updatedUser: UserAccount = {
       ...user,
+      storeId: user.storeId || 'loja_principal',
       lastLoginAt: new Date().toISOString(),
     };
 
@@ -273,6 +275,7 @@ class AuthServiceClass {
           phone: '11988887777',
           city: 'SAO PAULO',
           role: 'merchant',
+          storeId: 'loja_principal',
           createdAt: new Date().toISOString(),
           lastLoginAt: new Date().toISOString(),
         };
