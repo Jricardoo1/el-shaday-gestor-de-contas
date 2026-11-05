@@ -89,6 +89,30 @@ export function handleFirestoreError(
   console.error('Firestore Error:', JSON.stringify(errInfo));
 }
 
+/**
+ * Remove recursivamente todas as propriedades 'undefined' de objetos e arrays
+ * para impedir o erro 'Unsupported field value: undefined' nativo do Firestore SDK,
+ * garantindo que todas as configurações e dados sejam gravados na nuvem sem falhas.
+ */
+export function cleanFirestoreData<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => cleanFirestoreData(item)) as unknown as T;
+  }
+  if (typeof data === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, val] of Object.entries(data)) {
+      if (val !== undefined) {
+        cleaned[key] = cleanFirestoreData(val);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
+}
+
 export type SyncStatus = 'idle' | 'connecting' | 'online' | 'offline' | 'syncing' | 'error';
 
 class FirebaseServiceClass {
@@ -324,10 +348,10 @@ class FirebaseServiceClass {
       const customerRef = doc(db, 'stores', storeId, 'customers', customer.id);
       await setDoc(
         customerRef,
-        {
+        cleanFirestoreData({
           ...customer,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
 
@@ -335,9 +359,9 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       await setDoc(
         storeRef,
-        {
+        cleanFirestoreData({
           deletedCustomerIds: arrayRemove(customer.id),
-        },
+        }),
         { merge: true }
       );
 
@@ -389,7 +413,7 @@ class FirebaseServiceClass {
         tombstonePayload.deletedPaymentIds = arrayUnion(...paymentIds);
       }
 
-      batch.set(storeRef, tombstonePayload, { merge: true });
+      batch.set(storeRef, cleanFirestoreData(tombstonePayload), { merge: true });
 
       await batch.commit();
       this.lastSyncedAt = new Date();
@@ -409,10 +433,10 @@ class FirebaseServiceClass {
       const entryRef = doc(db, 'stores', storeId, 'entries', entry.id);
       await setDoc(
         entryRef,
-        {
+        cleanFirestoreData({
           ...entry,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
 
@@ -420,9 +444,9 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       await setDoc(
         storeRef,
-        {
+        cleanFirestoreData({
           deletedEntryIds: arrayRemove(entry.id),
-        },
+        }),
         { merge: true }
       );
 
@@ -447,10 +471,10 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       batch.set(
         storeRef,
-        {
+        cleanFirestoreData({
           deletedEntryIds: arrayUnion(entryId),
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
 
@@ -478,10 +502,10 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       batch.set(
         storeRef,
-        {
+        cleanFirestoreData({
           deletedEntryIds: arrayUnion(...entryIds),
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
 
@@ -503,10 +527,10 @@ class FirebaseServiceClass {
       const paymentRef = doc(db, 'stores', storeId, 'payments', payment.id);
       await setDoc(
         paymentRef,
-        {
+        cleanFirestoreData({
           ...payment,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
       this.lastSyncedAt = new Date();
@@ -526,10 +550,10 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       await setDoc(
         storeRef,
-        {
+        cleanFirestoreData({
           ...settings,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
       this.lastSyncedAt = new Date();
@@ -731,13 +755,13 @@ class FirebaseServiceClass {
       // Save store settings (with latest cardápio) + deleted lists tombstones
       batch.set(
         storeRef,
-        {
+        cleanFirestoreData({
           ...mergedSettings,
           deletedCustomerIds: Array.from(combinedDeletedCustomers),
           deletedEntryIds: Array.from(combinedDeletedEntries),
           deletedPaymentIds: Array.from(combinedDeletedPayments),
           updatedAt: mergedSettings.updatedAt || new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
       writeCount++;
@@ -758,19 +782,19 @@ class FirebaseServiceClass {
 
       mergedCustomers.forEach((cust) => {
         const ref = doc(db, 'stores', storeId, 'customers', cust.id);
-        batch.set(ref, cust, { merge: true });
+        batch.set(ref, cleanFirestoreData(cust), { merge: true });
         writeCount++;
       });
 
       mergedEntries.forEach((entry) => {
         const ref = doc(db, 'stores', storeId, 'entries', entry.id);
-        batch.set(ref, entry, { merge: true });
+        batch.set(ref, cleanFirestoreData(entry), { merge: true });
         writeCount++;
       });
 
       mergedPayments.forEach((payment) => {
         const ref = doc(db, 'stores', storeId, 'payments', payment.id);
-        batch.set(ref, payment, { merge: true });
+        batch.set(ref, cleanFirestoreData(payment), { merge: true });
         writeCount++;
       });
 

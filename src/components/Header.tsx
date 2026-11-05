@@ -79,118 +79,107 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2">
-        {/* Left: Store identity & book logo (Target selector) */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-700 border border-emerald-600/80 flex items-center justify-center text-white shadow-xs shrink-0">
-            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-200" />
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+        {/* Left: Store identity & book logo */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-700/90 border border-emerald-500/50 flex items-center justify-center text-white shadow-xs shrink-0">
+            <BookOpen className="w-5 h-5 text-emerald-200" />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight truncate leading-tight">
-                {settings.storeName || 'Controle de Fiado'}
-              </h1>
-              <span className="hidden md:inline-flex items-center gap-1.5">
-                <NetworkStatusBadge />
-                {onOpenCloudDatabase && <CloudDatabaseBadge onClick={onOpenCloudDatabase} />}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-[10px] sm:text-xs text-emerald-200 truncate font-medium">
-                Conta Cliente & Gestão de Fiados
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-white truncate leading-tight">
+              {settings.storeName || 'Controle de Fiado'}
+            </h1>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <p className="text-[11px] sm:text-xs text-emerald-200/90 font-medium truncate hidden xs:block">
+                Conta Cliente & Fiados
               </p>
-              <span className="md:hidden">
-                {onOpenCloudDatabase && <CloudDatabaseBadge onClick={onOpenCloudDatabase} />}
-              </span>
+              {onOpenCloudDatabase && (
+                <CloudDatabaseBadge onClick={onOpenCloudDatabase} />
+              )}
             </div>
           </div>
         </div>
 
         {/* Right action group */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Quick PWA install button */}
           <PWAInstallButton compact />
 
           {/* 1. WhatsApp Broadcast button */}
           {onOpenBroadcast && (
             <button
+              type="button"
               onClick={onOpenBroadcast}
-              title="Disparar mensagem / cardápio diário no WhatsApp"
-              className="h-9 sm:h-9.5 px-2.5 sm:px-3 inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-xs hover:shadow-sm border border-emerald-500/40 active:scale-95 shrink-0"
+              title="Disparar mensagem ou cardápio diário no WhatsApp"
+              className="h-10 px-3 inline-flex items-center justify-center gap-2 bg-emerald-700/80 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition shadow-2xs border border-emerald-600/60 active:scale-95 cursor-pointer"
             >
-              <Send className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline whitespace-nowrap">Disparar WhatsApp</span>
-              <span className="sm:hidden">WhatsApp</span>
+              <Send className="w-4.5 h-4.5 shrink-0 text-emerald-200" />
+              <span className="hidden lg:inline whitespace-nowrap">WhatsApp</span>
             </button>
           )}
 
-          {/* 2. Receber Pagamento */}
+          {/* 2. Crédito Antecipado (Ícone ampliado a pedido do usuário) */}
           <button
-            onClick={onOpenNewPayment}
-            title="Receber Pagamento / Abater saldo"
-            className="h-9 sm:h-9.5 px-2.5 sm:px-3 inline-flex items-center justify-center gap-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-bold transition shadow-xs hover:shadow-sm border border-teal-500/40 active:scale-95 shrink-0"
+            type="button"
+            onClick={onOpenPrepaidCredit}
+            title="Lançar Crédito Antecipado / Marmitas Pré-Pagas"
+            className="h-10 px-3 sm:px-3.5 inline-flex items-center justify-center gap-2 bg-blue-700/85 hover:bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-xs border border-blue-400/50 active:scale-95 cursor-pointer"
           >
-            <DollarSign className="w-3.5 h-3.5 text-teal-200 shrink-0" />
+            <Wallet className="w-5 h-5 shrink-0 text-blue-200" />
+            <span className="whitespace-nowrap">Crédito</span>
+          </button>
+
+          {/* 3. Receber Pagamento */}
+          <button
+            type="button"
+            onClick={onOpenNewPayment}
+            title="Receber Pagamento / Abater saldo devedor"
+            className="h-10 px-3 sm:px-3.5 inline-flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-2xs hover:shadow-xs border border-teal-400/50 active:scale-95 cursor-pointer"
+          >
+            <DollarSign className="w-5 h-5 shrink-0 text-teal-200" />
             <span className="whitespace-nowrap">Receber</span>
           </button>
 
-          {/* 3. Crédito Antecipado */}
+          {/* 4. Lançar a Prazo (Destaque Principal) */}
           <button
-            onClick={onOpenPrepaidCredit}
-            title="Inserir Crédito Antecipado (Marmitas Pré-Pagas)"
-            className="h-9 sm:h-9.5 px-2.5 sm:px-3 inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-xs hover:shadow-sm border border-blue-400/40 active:scale-95 shrink-0"
-          >
-            <Wallet className="w-3.5 h-3.5 text-blue-100 shrink-0" />
-            <span className="hidden sm:inline whitespace-nowrap">Crédito Antecipado</span>
-            <span className="sm:hidden">Crédito</span>
-          </button>
-
-          {/* 4. Lançar a Prazo */}
-          <button
+            type="button"
             onClick={onOpenNewFiado}
-            title="Lançar Consumo a Prazo"
-            className="h-9 sm:h-9.5 px-2.5 sm:px-3 inline-flex items-center justify-center gap-1.5 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 rounded-xl text-xs font-black transition shadow-xs hover:shadow-sm border border-emerald-300/80 active:scale-95 shrink-0"
+            title="Lançar Consumo a Prazo / Novo Fiado"
+            className="h-10 px-3.5 sm:px-4 inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl text-xs sm:text-sm font-black transition shadow-xs hover:shadow-sm border border-amber-300 active:scale-95 cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
-            <span className="hidden sm:inline whitespace-nowrap">Lançar a Prazo</span>
-            <span className="sm:hidden">Lançar</span>
+            <Plus className="w-5 h-5 stroke-[3] shrink-0 text-slate-950" />
+            <span className="whitespace-nowrap">+ Lançar</span>
           </button>
 
-          {/* Master Admin / SaaS Owner button */}
-          <button
-            onClick={onOpenAdmin}
-            title="Painel Master do Dono (Acompanhar Lojas e Chaves)"
-            className="h-9 sm:h-9.5 hidden lg:inline-flex items-center justify-center gap-1.5 bg-slate-900/85 hover:bg-slate-950 text-amber-300 hover:text-amber-200 text-xs font-bold px-2.5 rounded-xl border border-amber-500/30 transition shadow-xs active:scale-95 shrink-0"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Master</span>
-          </button>
+          {/* Divisória sutil */}
+          <div className="hidden sm:block h-7 w-px bg-emerald-700/80 my-auto" />
 
-          {/* User Account / Profile button */}
+          {/* Usuário / Conta Logada (Ampliado para visualização clara de quem está logado) */}
           {user ? (
             <button
               type="button"
               onClick={onOpenUserAccount}
-              title={`Usuário ativo: ${user.name} (${user.storeName}) • Clique para ver dados, trocar de conta ou sair`}
-              className={`h-9 sm:h-9.5 px-2.5 inline-flex items-center gap-1.5 rounded-xl border text-xs font-bold transition shrink-0 active:scale-95 cursor-pointer shadow-xs ${
+              title={`Usuário logado: ${user.name} (${user.storeName}) • Clique para ver dados, trocar de conta ou sair`}
+              className={`h-10 px-2.5 sm:px-3.5 inline-flex items-center gap-2 rounded-xl border-2 transition shrink-0 active:scale-95 cursor-pointer shadow-xs ${
                 user.id === 'usr_demo_principal'
-                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-400/50'
-                  : 'bg-emerald-900/80 hover:bg-emerald-900 text-white border-emerald-400/40'
+                  ? 'bg-amber-950/60 hover:bg-amber-950/80 text-amber-100 border-amber-400/70'
+                  : 'bg-emerald-950/85 hover:bg-emerald-950 text-white border-emerald-400/80'
               }`}
             >
-              <div className="w-5 h-5 rounded-full bg-emerald-400 text-emerald-950 font-black text-[10px] flex items-center justify-center shadow-xs">
-                {user.name.slice(0, 1).toUpperCase()}
+              <div className="relative">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-400 text-emerald-950 font-black text-xs flex items-center justify-center shrink-0 shadow-inner">
+                  {user.name.slice(0, 1).toUpperCase()}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-300 ring-1 ring-emerald-950" />
               </div>
-              <span className="hidden sm:inline max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
-              {user.id === 'usr_demo_principal' ? (
-                <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.2 rounded-full uppercase hidden md:inline">
-                  Demo
+              <div className="flex flex-col text-left leading-tight min-w-0">
+                <span className="text-[9px] uppercase font-bold text-emerald-300 tracking-wider">
+                  {user.id === 'usr_demo_principal' ? 'Modo Demo' : 'Logado:'}
                 </span>
-              ) : (
-                <span className="text-[9px] bg-emerald-400 text-emerald-950 font-black px-1.5 py-0.2 rounded-full uppercase hidden md:inline">
-                  Minha Conta
+                <span className="text-xs sm:text-sm font-black text-white truncate max-w-[100px] sm:max-w-[160px]">
+                  {user.name}
                 </span>
-              )}
+              </div>
             </button>
           ) : (
             onOpenLogin && (
@@ -198,18 +187,30 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenLogin}
                 title="Entrar com Minha Conta ou Cadastrar Novo Usuário"
-                className="h-9 sm:h-9.5 px-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition shadow-md active:scale-95 shrink-0 cursor-pointer animate-pulse"
+                className="h-10 px-3 sm:px-4 inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm transition shadow-sm active:scale-95 shrink-0 cursor-pointer"
               >
-                <User className="w-3.5 h-3.5" />
+                <User className="w-4 h-4 text-slate-950" />
                 <span>Entrar / Cadastrar</span>
               </button>
             )
           )}
 
+          {/* Master Admin / SaaS Owner button */}
           <button
+            type="button"
+            onClick={onOpenAdmin}
+            title="Painel Master do Dono / Acompanhamento Geral"
+            className="h-9 w-9 hidden md:inline-flex items-center justify-center rounded-xl bg-slate-900/60 hover:bg-slate-950 text-amber-300 border border-amber-500/30 transition active:scale-95 cursor-pointer shrink-0"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+          </button>
+
+          {/* Configurações */}
+          <button
+            type="button"
             onClick={onOpenSettings}
-            title="Configurações e Backup"
-            className="h-9 sm:h-9.5 w-9 sm:w-9.5 inline-flex items-center justify-center rounded-xl text-emerald-200 hover:text-white hover:bg-emerald-700/80 transition active:scale-95 shrink-0"
+            title="Configurações da Loja, Cardápio e Backup"
+            className="h-9 w-9 inline-flex items-center justify-center rounded-xl text-emerald-200 hover:text-white hover:bg-emerald-700/80 transition active:scale-95 shrink-0 cursor-pointer"
           >
             <Settings className="w-4 h-4" />
           </button>

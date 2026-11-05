@@ -64,10 +64,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [cardapioMessage, setCardapioMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    setStoreName(settings.storeName || '');
+    setOwnerName(settings.ownerName || '');
+    setPhone(settings.phone || '');
+    setPixKey(settings.pixKey || '');
+    setPixKeyType(settings.pixKeyType || 'email');
+    setCity(settings.city || 'SAO PAULO');
+    setDefaultDueDays(settings.defaultDueDays || 15);
+    setBackupReminderFrequency(settings.backupReminderFrequency || 'weekly');
     if (Array.isArray(settings.products)) {
       setProducts(settings.products);
     }
-  }, [settings.products]);
+  }, [settings]);
 
   // Product manager filter and custom product creation states
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
@@ -117,12 +125,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       defaultDueDays: Number(defaultDueDays) || 15,
       backupReminderFrequency,
       products,
+      updatedAt: new Date().toISOString(),
     };
     onSave(updated);
-    setMessage('Configurações salvas com sucesso!');
+    setMessage('Configurações salvas e sincronizadas na nuvem para todos os aplicativos!');
     setTimeout(() => {
       onClose();
-    }, 1200);
+    }, 1400);
   };
 
   const handlePriceChange = (productId: string, newPriceStr: string) => {
@@ -348,8 +357,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Store className="w-5 h-5 text-emerald-200" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black tracking-tight">Configurações do Comércio</h2>
-              <p className="text-xs text-emerald-200/90 mt-0.5">Cardápio, tabela de preços, chave PIX e backup</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-black tracking-tight">Configurações do Comércio</h2>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Nuvem Ativa • Sincronização em Tempo Real
+                </span>
+              </div>
+              <p className="text-xs text-emerald-200/90 mt-0.5">Cardápio, tabela de preços, chave PIX e dados sincronizados em todos os apps</p>
             </div>
           </div>
 
