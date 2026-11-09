@@ -113,6 +113,21 @@ export function cleanFirestoreData<T>(data: T): T {
   return data;
 }
 
+/**
+ * Converte de forma segura qualquer valor (nulo, objeto ou array) em uma lista de strings iterável,
+ * prevenindo o erro "TypeError: ... is not iterable" durante a sincronização na nuvem.
+ */
+export function toSafeArray(val: unknown): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val.filter((item) => typeof item === 'string' && item.trim().length > 0);
+  }
+  if (typeof val === 'object') {
+    return Object.keys(val).filter((item) => typeof item === 'string' && item.trim().length > 0);
+  }
+  return [];
+}
+
 export type SyncStatus = 'idle' | 'connecting' | 'online' | 'offline' | 'syncing' | 'error';
 
 class FirebaseServiceClass {
@@ -386,17 +401,20 @@ class FirebaseServiceClass {
       const storeId = this.getStoreId();
       const batch = writeBatch(db);
 
+      const safeEntryIds = toSafeArray(entryIds);
+      const safePaymentIds = toSafeArray(paymentIds);
+
       // 1. Delete customer document
       const customerRef = doc(db, 'stores', storeId, 'customers', customerId);
       batch.delete(customerRef);
 
       // 2. Cascade delete all fiado entries of this customer from cloud
-      entryIds.forEach((eid) => {
+      safeEntryIds.forEach((eid) => {
         batch.delete(doc(db, 'stores', storeId, 'entries', eid));
       });
 
       // 3. Cascade delete all payments of this customer from cloud
-      paymentIds.forEach((pid) => {
+      safePaymentIds.forEach((pid) => {
         batch.delete(doc(db, 'stores', storeId, 'payments', pid));
       });
 
@@ -406,11 +424,11 @@ class FirebaseServiceClass {
         deletedCustomerIds: arrayUnion(customerId),
         updatedAt: new Date().toISOString(),
       };
-      if (entryIds.length > 0) {
-        tombstonePayload.deletedEntryIds = arrayUnion(...entryIds);
+      if (safeEntryIds.length > 0) {
+        tombstonePayload.deletedEntryIds = arrayUnion(...safeEntryIds);
       }
-      if (paymentIds.length > 0) {
-        tombstonePayload.deletedPaymentIds = arrayUnion(...paymentIds);
+      if (safePaymentIds.length > 0) {
+        tombstonePayload.deletedPaymentIds = arrayUnion(...safePaymentIds);
       }
 
       batch.set(storeRef, cleanFirestoreData(tombstonePayload), { merge: true });
@@ -491,11 +509,12 @@ class FirebaseServiceClass {
    */
   public async deleteFiadoEntries(entryIds: string[]): Promise<void> {
     try {
-      if (!db || entryIds.length === 0) return;
+      const safeEntryIds = toSafeArray(entryIds);
+      if (!db || safeEntryIds.length === 0) return;
       const storeId = this.getStoreId();
       const batch = writeBatch(db);
 
-      entryIds.forEach((id) => {
+      safeEntryIds.forEach((id) => {
         batch.delete(doc(db, 'stores', storeId, 'entries', id));
       });
 
@@ -503,7 +522,7 @@ class FirebaseServiceClass {
       batch.set(
         storeRef,
         cleanFirestoreData({
-          deletedEntryIds: arrayUnion(...entryIds),
+          deletedEntryIds: arrayUnion(...safeEntryIds),
           updatedAt: new Date().toISOString(),
         }),
         { merge: true }
@@ -537,6 +556,35 @@ class FirebaseServiceClass {
       this.setStatus('online');
     } catch (err) {
       console.warn('Aviso: pagamento salvo localmente; sincronização na nuvem pendente:', err);
+    }
+  }
+
+  /**
+   * Deletes a payment record from Firestore and marks tombstone
+   */
+  public async deletePayment(paymentId: string): Promise<void> {
+    try {
+      if (!db) return;
+      const storeId = this.getStoreId();
+      const batch = writeBatch(db);
+      const paymentRef = doc(db, 'stores', storeId, 'payments', paymentId);
+      batch.delete(paymentRef);
+
+      const storeRef = doc(db, 'stores', storeId);
+      batch.set(
+        storeRef,
+        cleanFirestoreData({
+          deletedPaymentIds: arrayUnion(paymentId),
+          updatedAt: new Date().toISOString(),
+        }),
+        { merge: true }
+      );
+
+      await batch.commit();
+      this.lastSyncedAt = new Date();
+      this.setStatus('online');
+    } catch (err) {
+      console.warn('Aviso: pagamento excluído localmente; sincronização na nuvem pendente:', err);
     }
   }
 
@@ -610,9 +658,9 @@ class FirebaseServiceClass {
       const storeRef = doc(db, 'stores', storeId);
       const storeSnap = await getDoc(storeRef);
       const storeData = storeSnap.exists() ? storeSnap.data() : null;
-      const remoteDeletedCustomers: string[] = storeData?.deletedCustomerIds || [];
-      const remoteDeletedEntries: string[] = storeData?.deletedEntryIds || [];
-      const remoteDeletedPayments: string[] = storeData?.deletedPaymentIds || [];
+      const remoteDeletedCustomers = toSafeArray(storeData?.deletedCustomerIds);
+      const remoteDeletedEntries = toSafeArray(storeData?.deletedEntryIds);
+      const remoteDeletedPayments = toSafeArray(storeData?.deletedPaymentIds);
 
       // Sincronização inteligente de Cardápio (produtos e preços) e Configurações
       let mergedSettings: StoreSettings = { ...localSettings };
@@ -653,16 +701,20 @@ class FirebaseServiceClass {
         }
       }
 
+      const safeLocalDeletedCustomers = toSafeArray(localDeletedCustomerIds);
+      const safeLocalDeletedEntries = toSafeArray(localDeletedEntryIds);
+      const safeLocalDeletedPayments = toSafeArray(localDeletedPaymentIds);
+
       const combinedDeletedCustomers = new Set([
-        ...localDeletedCustomerIds,
+        ...safeLocalDeletedCustomers,
         ...remoteDeletedCustomers,
       ]);
       const combinedDeletedEntries = new Set([
-        ...localDeletedEntryIds,
+        ...safeLocalDeletedEntries,
         ...remoteDeletedEntries,
       ]);
       const combinedDeletedPayments = new Set([
-        ...localDeletedPaymentIds,
+        ...safeLocalDeletedPayments,
         ...remoteDeletedPayments,
       ]);
 
@@ -816,15 +868,22 @@ class FirebaseServiceClass {
     } catch (err) {
       console.error('Erro na sincronização com Firebase Firestore:', err);
       this.testConnection();
+      const safeCustomers = Array.isArray(localCustomers) ? localCustomers : [];
+      const safeEntries = Array.isArray(localEntries) ? localEntries : [];
+      const safePayments = Array.isArray(localPayments) ? localPayments : [];
+      const safeDelCust = toSafeArray(localDeletedCustomerIds);
+      const safeDelEnt = toSafeArray(localDeletedEntryIds);
+      const safeDelPay = toSafeArray(localDeletedPaymentIds);
+
       return {
-        customers: localCustomers.filter((c) => !localDeletedCustomerIds.includes(c.id)),
-        entries: localEntries.filter((e) => !localDeletedEntryIds.includes(e.id)),
-        payments: localPayments.filter((p) => !localDeletedPaymentIds.includes(p.id)),
+        customers: safeCustomers.filter((c) => !safeDelCust.includes(c.id)),
+        entries: safeEntries.filter((e) => !safeDelEnt.includes(e.id)),
+        payments: safePayments.filter((p) => !safeDelPay.includes(p.id)),
         settings: localSettings,
         syncedCount: 0,
-        deletedCustomerIds: localDeletedCustomerIds,
-        deletedEntryIds: localDeletedEntryIds,
-        deletedPaymentIds: localDeletedPaymentIds,
+        deletedCustomerIds: safeDelCust,
+        deletedEntryIds: safeDelEnt,
+        deletedPaymentIds: safeDelPay,
       };
     }
   }

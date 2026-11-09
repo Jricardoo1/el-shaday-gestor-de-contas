@@ -18,6 +18,7 @@ import { ReportsTab } from './components/ReportsTab';
 import { CustomerModal } from './components/CustomerModal';
 import { NewFiadoModal } from './components/NewFiadoModal';
 import { NewPaymentModal } from './components/NewPaymentModal';
+import { EditPaymentModal } from './components/EditPaymentModal';
 import { CustomerDetailModal } from './components/CustomerDetailModal';
 import { WhatsAppChargeModal } from './components/WhatsAppChargeModal';
 import { ReceiptModal } from './components/ReceiptModal';
@@ -62,6 +63,8 @@ export default function App() {
 
   const [isNewPaymentOpen, setIsNewPaymentOpen] = useState(false);
   const [selectedCustomerIdForPayment, setSelectedCustomerIdForPayment] = useState<string | undefined>();
+  const [newPaymentInitialMode, setNewPaymentInitialMode] = useState<'free' | 'monthly'>('free');
+  const [editingPayment, setEditingPayment] = useState<PaymentRecord | null>(null);
 
   const [selectedCustomerDetail, setSelectedCustomerDetail] = useState<Customer | null>(null);
 
@@ -170,6 +173,7 @@ export default function App() {
     setIsCloudDatabaseOpen(false);
     setIsAuthModalOpen(false);
     setIsUserAccountModalOpen(false);
+    setEditingPayment(null);
   };
 
   const handleOpenLogin = (mode: 'login' | 'register' = 'login') => {
@@ -213,9 +217,10 @@ export default function App() {
     setIsNewFiadoOpen(true);
   };
 
-  const handleOpenNewPayment = (customerId?: string) => {
+  const handleOpenNewPayment = (customerId?: string, mode: 'free' | 'monthly' = 'free') => {
     closeAllModals();
     setSelectedCustomerIdForPayment(customerId);
+    setNewPaymentInitialMode(mode);
     setIsNewPaymentOpen(true);
   };
 
@@ -352,6 +357,31 @@ export default function App() {
     if (customer && openWhatsAppReceipt) {
       closeAllModals();
       setReceiptData({ customer, payment });
+    }
+  };
+
+  const handleEditPayment = (payment: PaymentRecord) => {
+    closeAllModals();
+    setEditingPayment(payment);
+  };
+
+  const handleSaveEditedPayment = (payment: PaymentRecord) => {
+    const result = StorageService.updatePayment(payment);
+    setPayments(result.payments);
+    setEntries(result.entries);
+    setEditingPayment(null);
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    const result = StorageService.deletePayment(paymentId);
+    setPayments(result.payments);
+    setEntries(result.entries);
+    setEditingPayment(null);
+    if (selectedCustomerDetail) {
+      const refreshedCustomer = StorageService.getCustomers().find((c) => c.id === selectedCustomerDetail.id);
+      if (refreshedCustomer) {
+        setSelectedCustomerDetail(refreshedCustomer);
+      }
     }
   };
 
@@ -493,7 +523,9 @@ export default function App() {
             payments={payments}
             customers={customers}
             settings={settings}
-            onNewPayment={() => handleOpenNewPayment(undefined)}
+            onNewPayment={(mode) => handleOpenNewPayment(undefined, mode || 'free')}
+            onEditPayment={handleEditPayment}
+            onDeletePayment={handleDeletePayment}
             onOpenWhatsAppReceipt={(c, p) => handleOpenWhatsApp(c, null, p)}
             onOpenReceipt={(c, p) => handleOpenReceipt(c, p, null)}
             onSelectCustomer={(c) => handleOpenCustomerDetail(c)}
@@ -547,12 +579,24 @@ export default function App() {
         <NewPaymentModal
           customers={customers}
           selectedCustomerId={selectedCustomerIdForPayment}
+          initialMode={newPaymentInitialMode}
           onClose={() => setIsNewPaymentOpen(false)}
           onSavePayment={handleSavePayment}
           onOpenNewCustomer={() => {
             setReturnActionAfterCustomerSave('payment');
             handleOpenCustomerModal(null);
           }}
+        />
+      )}
+
+      {/* 3.1. Edit Payment Modal */}
+      {editingPayment && (
+        <EditPaymentModal
+          payment={editingPayment}
+          customer={customers.find((c) => c.id === editingPayment.customerId)}
+          onClose={() => setEditingPayment(null)}
+          onSavePayment={handleSaveEditedPayment}
+          onDeletePayment={handleDeletePayment}
         />
       )}
 
@@ -573,6 +617,8 @@ export default function App() {
           onUpdateEntry={(entry) => handleSaveFiado(entry, false)}
           onNewPrepaidCredit={(cId) => handleOpenPrepaidCredit(cId)}
           onOpenCollectionSuggestions={(c) => handleOpenCollectionSuggestions(c)}
+          onEditPayment={handleEditPayment}
+          onDeletePayment={handleDeletePayment}
         />
       )}
 

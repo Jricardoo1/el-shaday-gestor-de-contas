@@ -197,6 +197,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <div className="text-[11px] font-bold text-emerald-800 text-center uppercase">
                   RECIBO DE PAGAMENTO #{payment.receiptNumber}
                 </div>
+                {payment.targetMonthLabel && (
+                  <div className="text-[11px] font-bold text-teal-800 text-center">
+                    REFERENTE A: {payment.targetMonthLabel.toUpperCase()}
+                  </div>
+                )}
                 <div className="flex justify-between pt-1">
                   <span>FORMA:</span>
                   <span className="font-bold uppercase">{payment.method}</span>

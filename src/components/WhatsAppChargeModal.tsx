@@ -88,8 +88,11 @@ export const WhatsAppChargeModal: React.FC<WhatsAppChargeModalProps> = ({
         const paidVal = lastPayment ? formatCurrency(lastPayment.amount) : '0,00';
         const remainingVal = formatCurrency(totalDebt);
         const isSettled = totalDebt <= 0.01;
+        const monthRef = lastPayment?.targetMonthLabel
+          ? `\n📅 *Referente ao Mês:* ${lastPayment.targetMonthLabel}`
+          : '';
 
-        return `Olá ${greetingName}! Confirmamos o recebimento do seu pagamento aqui na *${storeName}*: ✅\n\n💵 *Valor Pago:* R$ ${paidVal}\n${
+        return `Olá ${greetingName}! Confirmamos o recebimento do seu pagamento aqui na *${storeName}*: ✅\n\n💵 *Valor Pago:* R$ ${paidVal}${monthRef}\n${
           isSettled
             ? '🎉 *Status:* Conta 100% quitada! Seu saldo agora é R$ 0,00.'
             : `📊 *Saldo restante da conta:* R$ ${remainingVal}`

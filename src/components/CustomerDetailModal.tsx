@@ -55,6 +55,8 @@ interface CustomerDetailModalProps {
   onUpdateEntry?: (entry: FiadoEntry) => void;
   onNewPrepaidCredit?: (customerId: string) => void;
   onOpenCollectionSuggestions?: (customer?: Customer) => void;
+  onEditPayment?: (payment: PaymentRecord) => void;
+  onDeletePayment?: (paymentId: string) => void;
 }
 
 export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
@@ -72,11 +74,27 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   onUpdateEntry,
   onNewPrepaidCredit,
   onOpenCollectionSuggestions,
+  onEditPayment,
+  onDeletePayment,
 }) => {
   const [activeTab, setActiveTab] = useState<'fiados' | 'fechamento_mensal' | 'pagamentos'>('fechamento_mensal');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDeleteBatchConfirm, setShowDeleteBatchConfirm] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<PaymentRecord | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
+
+  const handleDeletePaymentFromModal = (paymentId: string) => {
+    const payment = payments.find((p) => p.id === paymentId);
+    if (onDeletePayment) {
+      onDeletePayment(paymentId);
+    } else {
+      StorageService.deletePayment(paymentId);
+    }
+    setRefreshKey((k) => k + 1);
+    setSuccessBanner(
+      `Pagamento de R$ ${payment ? formatCurrency(payment.amount) : ''} excluído com sucesso! O valor foi estornado e voltou para a ficha de ${customer.name}.`
+    );
+  };
 
   const debtInfo = StorageService.getCustomerDebt(customer.id);
   const payments = StorageService.getPayments().filter((p) => p.customerId === customer.id);
@@ -1242,15 +1260,48 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                           #{payment.receiptNumber}
                         </span>
                       )}
+                      {payment.targetMonthLabel && (
+                        <span className="text-[10px] font-bold bg-teal-100 text-teal-900 border border-teal-200 px-2 py-0.5 rounded-md">
+                          📅 Mês: {payment.targetMonthLabel}
+                        </span>
+                      )}
                     </div>
                     {payment.notes && (
                       <p className="text-xs text-slate-600 mt-1">{payment.notes}</p>
                     )}
                   </div>
 
-                  <span className="text-base font-black text-emerald-600">
-                    + R$ {formatCurrency(payment.amount)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-black text-emerald-600">
+                      + R$ {formatCurrency(payment.amount)}
+                    </span>
+                    {onEditPayment && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditPayment(payment);
+                        }}
+                        title="Editar este recebimento"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200 transition cursor-pointer active:scale-95"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 text-slate-600" />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPaymentToDelete(payment);
+                      }}
+                      title="Excluir este recebimento e devolver o valor para a ficha do cliente"
+                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 transition cursor-pointer active:scale-95 flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-[11px] font-bold hidden sm:inline">Excluir</span>
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -1456,6 +1507,28 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
           onClose={() => setShowBreakdownModal(false)}
         />
       )}
+
+      {/* Modal de Confirmação para Excluir Pagamento e Devolver Débito à Ficha */}
+      <ConfirmModal
+        isOpen={!!paymentToDelete}
+        title="Excluir Pagamento e Estornar Saldo"
+        message={
+          paymentToDelete
+            ? `Deseja realmente excluir este recebimento de R$ ${formatCurrency(
+                paymentToDelete.amount
+              )} (${paymentToDelete.receiptNumber || 'Comprovante'})? O valor será estornado e voltará para o saldo devedor na ficha de ${customer.name}.`
+            : ''
+        }
+        confirmLabel="Sim, Excluir e Voltar Valor"
+        isDestructive={true}
+        onConfirm={() => {
+          if (paymentToDelete) {
+            handleDeletePaymentFromModal(paymentToDelete.id);
+            setPaymentToDelete(null);
+          }
+        }}
+        onCancel={() => setPaymentToDelete(null)}
+      />
     </div>
   );
 };

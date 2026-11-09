@@ -11,7 +11,7 @@ import {
   AdminPixConfig,
 } from '../types';
 import { LicenseSecurity } from './licenseSecurity';
-import { FirebaseService } from './firebase';
+import { FirebaseService, toSafeArray } from './firebase';
 import { AuthService } from './auth';
 
 const STORAGE_KEYS = {
@@ -528,8 +528,8 @@ export const StorageService = {
     const activeUserId = AuthService.getActiveUserId();
     const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_CUSTOMERS;
     const list = load<Customer[]>(STORAGE_KEYS.CUSTOMERS, fallback);
-    const deletedCustomerIds = new Set(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
-    const filtered = list.filter((c) => !deletedCustomerIds.has(c.id));
+    const deletedCustomerIds = new Set(toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, [])));
+    const filtered = (Array.isArray(list) ? list : []).filter((c) => !deletedCustomerIds.has(c.id));
     return [...filtered].sort((a, b) =>
       (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' })
     );
@@ -537,7 +537,7 @@ export const StorageService = {
 
   saveCustomer(customer: Customer): Customer[] {
     // If this customer was previously in deleted list, remove it
-    const deletedCustomerIds = load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []);
+    const deletedCustomerIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
     if (deletedCustomerIds.includes(customer.id)) {
       save(
         STORAGE_KEYS.DELETED_CUSTOMERS,
@@ -569,7 +569,7 @@ export const StorageService = {
 
   deleteCustomer(id: string): { customers: Customer[]; entries: FiadoEntry[] } {
     // 1. Mark customer in persistent deleted list to permanently prevent cloud sync resurrection
-    const deletedCustomerIds = load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []);
+    const deletedCustomerIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
     if (!deletedCustomerIds.includes(id)) {
       deletedCustomerIds.push(id);
       save(STORAGE_KEYS.DELETED_CUSTOMERS, deletedCustomerIds);
@@ -585,7 +585,7 @@ export const StorageService = {
     save(STORAGE_KEYS.ENTRIES, entries);
 
     if (entryIds.length > 0) {
-      const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
+      const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
       entryIds.forEach((eid) => {
         if (!deletedEntryIds.includes(eid)) deletedEntryIds.push(eid);
       });
@@ -599,7 +599,7 @@ export const StorageService = {
     save(STORAGE_KEYS.PAYMENTS, payments);
 
     if (paymentIds.length > 0) {
-      const deletedPaymentIds = load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []);
+      const deletedPaymentIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []));
       paymentIds.forEach((pid) => {
         if (!deletedPaymentIds.includes(pid)) deletedPaymentIds.push(pid);
       });
@@ -617,9 +617,9 @@ export const StorageService = {
     const activeUserId = AuthService.getActiveUserId();
     const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_ENTRIES;
     const list = load<FiadoEntry[]>(STORAGE_KEYS.ENTRIES, fallback);
-    const deletedEntryIds = new Set(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
-    const deletedCustomerIds = new Set(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
-    const filtered = list.filter(
+    const deletedEntryIds = new Set(toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, [])));
+    const deletedCustomerIds = new Set(toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, [])));
+    const filtered = (Array.isArray(list) ? list : []).filter(
       (e) => !deletedEntryIds.has(e.id) && !deletedCustomerIds.has(e.customerId)
     );
     return filtered.map((entry) => ({
@@ -630,7 +630,7 @@ export const StorageService = {
 
   saveFiadoEntry(entry: FiadoEntry): FiadoEntry[] {
     // If this entry ID was previously in deleted list, remove it
-    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
+    const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
     if (deletedEntryIds.includes(entry.id)) {
       save(
         STORAGE_KEYS.DELETED_ENTRIES,
@@ -661,7 +661,7 @@ export const StorageService = {
   },
 
   deleteFiadoEntry(id: string): FiadoEntry[] {
-    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
+    const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
     if (!deletedEntryIds.includes(id)) {
       deletedEntryIds.push(id);
       save(STORAGE_KEYS.DELETED_ENTRIES, deletedEntryIds);
@@ -675,7 +675,7 @@ export const StorageService = {
   },
 
   deleteFiadoEntries(ids: string[]): FiadoEntry[] {
-    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
+    const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
     ids.forEach((id) => {
       if (!deletedEntryIds.includes(id)) deletedEntryIds.push(id);
     });
@@ -694,9 +694,9 @@ export const StorageService = {
     const activeUserId = AuthService.getActiveUserId();
     const fallback = activeUserId && activeUserId !== 'usr_demo_principal' ? [] : INITIAL_PAYMENTS;
     const list = load<PaymentRecord[]>(STORAGE_KEYS.PAYMENTS, fallback);
-    const deletedPaymentIds = new Set(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []));
-    const deletedCustomerIds = new Set(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
-    return list.filter(
+    const deletedPaymentIds = new Set(toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, [])));
+    const deletedCustomerIds = new Set(toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, [])));
+    return (Array.isArray(list) ? list : []).filter(
       (p) => !deletedPaymentIds.has(p.id) && !deletedCustomerIds.has(p.customerId)
     );
   },
@@ -767,13 +767,17 @@ export const StorageService = {
   },
 
   /**
-   * Settles multiple selected entries for monthly closing in a single operation.
+    * Settles multiple selected entries for monthly closing in a single operation.
    */
   settleMonthlyEntries(params: {
     customerId: string;
     entryIds: string[];
     paymentMethod: PaymentRecord['method'];
     notes?: string;
+    targetMonth?: string;
+    targetMonthLabel?: string;
+    date?: string;
+    customAmount?: number;
   }): { payment: PaymentRecord; updatedEntries: FiadoEntry[] } {
     const entries = this.getFiadoEntries();
     let totalSettled = 0;
@@ -796,16 +800,25 @@ export const StorageService = {
 
     save(STORAGE_KEYS.ENTRIES, updatedEntries);
 
+    const paymentAmount =
+      params.customAmount !== undefined && params.customAmount > 0
+        ? params.customAmount
+        : totalSettled;
+
     const payment: PaymentRecord = {
       id: 'p_' + Date.now(),
       customerId: params.customerId,
-      amount: totalSettled,
-      date: getRelativeDateString(0),
+      amount: paymentAmount,
+      date: params.date || getRelativeDateString(0),
       method: params.paymentMethod,
-      receiptNumber: 'FECH-' + Date.now().toString().slice(-6),
+      receiptNumber: 'MENSAL-' + Date.now().toString().slice(-6),
       notes:
         params.notes ||
-        `Fechamento mensal de ${params.entryIds.length} compras de marmitex`,
+        (params.targetMonthLabel
+          ? `Pagamento referente ao mês de ${params.targetMonthLabel} (${params.entryIds.length} consumos)`
+          : `Fechamento mensal de ${params.entryIds.length} compras de marmitex`),
+      targetMonth: params.targetMonth,
+      targetMonthLabel: params.targetMonthLabel,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -825,6 +838,152 @@ export const StorageService = {
     });
 
     return { payment, updatedEntries };
+  },
+
+  /**
+   * Recalcula a distribuição de pagamentos e amortização nas compras do cliente,
+   * garantindo que a exclusão de um pagamento devolva o débito para a ficha do cliente.
+   */
+  recalculateCustomerEntries(customerId: string): FiadoEntry[] {
+    const allEntries = this.getFiadoEntries();
+    const customerPayments = this.getPayments().filter((p) => p.customerId === customerId);
+
+    // Mapeia pagamentos diretos vinculados a uma entrada específica (fiadoEntryId)
+    const specificPaymentMap = new Map<string, number>();
+    let generalMoney = 0;
+
+    customerPayments.forEach((p) => {
+      if (p.fiadoEntryId) {
+        specificPaymentMap.set(
+          p.fiadoEntryId,
+          (specificPaymentMap.get(p.fiadoEntryId) || 0) + p.amount
+        );
+      } else {
+        generalMoney += p.amount;
+      }
+    });
+
+    // Ordena as compras do cliente por data (mais antigas primeiro)
+    const customerEntries = allEntries
+      .filter((e) => e.customerId === customerId)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || '').localeCompare(b.createdAt || ''));
+
+    const updatedCustomerEntriesMap = new Map<string, FiadoEntry>();
+
+    // 1ª etapa: aloca créditos pré-pagos e pagamentos específicos da própria compra
+    customerEntries.forEach((entry) => {
+      const creditPaid = entry.paidFromCredit || 0;
+      const netToPay = Math.max(0, entry.amount - creditPaid);
+      const specificPaid = Math.min(netToPay, specificPaymentMap.get(entry.id) || 0);
+
+      // Se sobrou valor de pagamento específico maior que a compra, soma ao montante geral
+      const extraSpecific = (specificPaymentMap.get(entry.id) || 0) - specificPaid;
+      if (extraSpecific > 0) {
+        generalMoney += extraSpecific;
+      }
+
+      updatedCustomerEntriesMap.set(entry.id, {
+        ...entry,
+        paidAmount: creditPaid + specificPaid,
+      });
+    });
+
+    // 2ª etapa: aloca pagamentos gerais/amortizações nas compras restantes (da mais antiga para a mais recente)
+    customerEntries.forEach((entry) => {
+      const currentEntry = updatedCustomerEntriesMap.get(entry.id) || entry;
+      const netRemaining = Math.max(0, entry.amount - currentEntry.paidAmount);
+      const allocated = Math.min(netRemaining, generalMoney);
+      generalMoney -= allocated;
+
+      const finalPaid = currentEntry.paidAmount + allocated;
+      const updatedEntry: FiadoEntry = {
+        ...currentEntry,
+        paidAmount: finalPaid,
+        status: calculateFiadoStatus({ ...currentEntry, paidAmount: finalPaid }),
+        updatedAt: new Date().toISOString(),
+      };
+      updatedCustomerEntriesMap.set(entry.id, updatedEntry);
+    });
+
+    const finalEntries = allEntries.map((e) => updatedCustomerEntriesMap.get(e.id) || e);
+    save(STORAGE_KEYS.ENTRIES, finalEntries);
+    this.touchTimestamp();
+    this.updateAdminSelfRecord();
+
+    // Sincroniza as compras recalculadas na nuvem
+    updatedCustomerEntriesMap.forEach((e) => {
+      FirebaseService.saveFiadoEntry(e);
+    });
+
+    return finalEntries;
+  },
+
+  /**
+   * Edita um recebimento existente, mesmo após já ter sido confirmado
+   */
+  updatePayment(payment: PaymentRecord): {
+    payments: PaymentRecord[];
+    entries: FiadoEntry[];
+  } {
+    const paymentWithTimestamp: PaymentRecord = {
+      ...payment,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const currentPayments = this.getPayments();
+    const index = currentPayments.findIndex((p) => p.id === payment.id);
+    let updatedPayments: PaymentRecord[];
+
+    if (index >= 0) {
+      updatedPayments = [...currentPayments];
+      updatedPayments[index] = paymentWithTimestamp;
+    } else {
+      updatedPayments = [paymentWithTimestamp, ...currentPayments];
+    }
+
+    save(STORAGE_KEYS.PAYMENTS, updatedPayments);
+    this.touchTimestamp();
+    this.updateAdminSelfRecord();
+
+    // Sincroniza com o Firebase
+    FirebaseService.savePayment(paymentWithTimestamp);
+
+    // Recalcula o saldo e as compras do cliente correspondente
+    const updatedEntries = this.recalculateCustomerEntries(payment.customerId);
+
+    return { payments: updatedPayments, entries: updatedEntries };
+  },
+
+  /**
+   * Exclui um recebimento/pagamento (estorno ou lançamento incorreto)
+   */
+  deletePayment(paymentId: string): {
+    payments: PaymentRecord[];
+    entries: FiadoEntry[];
+  } {
+    const currentPayments = this.getPayments();
+    const paymentToDelete = currentPayments.find((p) => p.id === paymentId);
+    const customerId = paymentToDelete?.customerId;
+
+    const deletedPaymentIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []));
+    if (!deletedPaymentIds.includes(paymentId)) {
+      deletedPaymentIds.push(paymentId);
+      save(STORAGE_KEYS.DELETED_PAYMENTS, deletedPaymentIds);
+    }
+
+    const updatedPayments = currentPayments.filter((p) => p.id !== paymentId);
+    save(STORAGE_KEYS.PAYMENTS, updatedPayments);
+    this.touchTimestamp();
+    this.updateAdminSelfRecord();
+
+    FirebaseService.deletePayment(paymentId);
+
+    let updatedEntries = this.getFiadoEntries();
+    if (customerId) {
+      updatedEntries = this.recalculateCustomerEntries(customerId);
+    }
+
+    return { payments: updatedPayments, entries: updatedEntries };
   },
 
   // Store Settings
@@ -868,20 +1027,20 @@ export const StorageService = {
   },
 
   saveCustomersLocally(customers: Customer[]) {
-    const deletedCustomerIds = load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []);
-    const filtered = customers.filter((c) => !deletedCustomerIds.includes(c.id));
+    const deletedCustomerIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
+    const filtered = (Array.isArray(customers) ? customers : []).filter((c) => !deletedCustomerIds.includes(c.id));
     save(STORAGE_KEYS.CUSTOMERS, filtered);
   },
 
   saveEntriesLocally(entries: FiadoEntry[]) {
-    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
-    const filtered = entries.filter((e) => !deletedEntryIds.includes(e.id));
+    const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
+    const filtered = (Array.isArray(entries) ? entries : []).filter((e) => !deletedEntryIds.includes(e.id));
     save(STORAGE_KEYS.ENTRIES, filtered);
   },
 
   savePaymentsLocally(payments: PaymentRecord[]) {
-    const deletedPaymentIds = load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []);
-    const filtered = payments.filter((p) => !deletedPaymentIds.includes(p.id));
+    const deletedPaymentIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []));
+    const filtered = (Array.isArray(payments) ? payments : []).filter((p) => !deletedPaymentIds.includes(p.id));
     save(STORAGE_KEYS.PAYMENTS, filtered);
   },
 
@@ -889,9 +1048,9 @@ export const StorageService = {
    * Performs full synchronization with the free Firebase Firestore cloud database
    */
   async syncWithCloud() {
-    const deletedCustomerIds = load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []);
-    const deletedEntryIds = load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []);
-    const deletedPaymentIds = load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []);
+    const deletedCustomerIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_CUSTOMERS, []));
+    const deletedEntryIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_ENTRIES, []));
+    const deletedPaymentIds = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_PAYMENTS, []));
 
     const res = await FirebaseService.syncWithCloud(
       this.getCustomers(),
@@ -905,13 +1064,13 @@ export const StorageService = {
 
     // Persist any remote deletions
     if (res.deletedCustomerIds && res.deletedCustomerIds.length > 0) {
-      save(STORAGE_KEYS.DELETED_CUSTOMERS, res.deletedCustomerIds);
+      save(STORAGE_KEYS.DELETED_CUSTOMERS, toSafeArray(res.deletedCustomerIds));
     }
     if (res.deletedEntryIds && res.deletedEntryIds.length > 0) {
-      save(STORAGE_KEYS.DELETED_ENTRIES, res.deletedEntryIds);
+      save(STORAGE_KEYS.DELETED_ENTRIES, toSafeArray(res.deletedEntryIds));
     }
     if (res.deletedPaymentIds && res.deletedPaymentIds.length > 0) {
-      save(STORAGE_KEYS.DELETED_PAYMENTS, res.deletedPaymentIds);
+      save(STORAGE_KEYS.DELETED_PAYMENTS, toSafeArray(res.deletedPaymentIds));
     }
 
     save(STORAGE_KEYS.CUSTOMERS, res.customers);
@@ -1099,7 +1258,7 @@ export const StorageService = {
     save(STORAGE_KEYS.ADMIN_MERCHANTS, list);
 
     // Save in deleted list so updateAdminSelfRecord does not revive it
-    const deleted = load<string[]>(STORAGE_KEYS.DELETED_MERCHANTS, []);
+    const deleted = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_MERCHANTS, []));
     if (!deleted.includes(id)) {
       deleted.push(id);
       save(STORAGE_KEYS.DELETED_MERCHANTS, deleted);
@@ -1110,7 +1269,7 @@ export const StorageService = {
   updateAdminSelfRecord(): void {
     const settings = this.getStoreSettings();
     const selfId = 'self_' + settings.deviceId;
-    const deleted = load<string[]>(STORAGE_KEYS.DELETED_MERCHANTS, []);
+    const deleted = toSafeArray(load<string[]>(STORAGE_KEYS.DELETED_MERCHANTS, []));
     if (deleted.includes(selfId) || (settings.deviceId && deleted.includes(settings.deviceId))) {
       return;
     }

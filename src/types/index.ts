@@ -61,6 +61,9 @@ export interface PaymentRecord {
 
   // Identificação de pagamento/crédito antecipado de marmitas
   isPrepaidCredit?: boolean;
+  // Identificação de recebimento referente a um mês específico (ex: '2026-10')
+  targetMonth?: string;
+  targetMonthLabel?: string;
 }
 
 export interface ProductItem {
