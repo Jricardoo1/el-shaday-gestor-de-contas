@@ -399,11 +399,11 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto transition-all duration-300 ${positionClass}`}
+      className={`fixed inset-0 z-50 flex justify-center bg-black/65 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto transition-all duration-300 ${positionClass}`}
     >
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-5xl xl:max-w-6xl max-h-[92vh] sm:max-h-[90vh] flex flex-col rounded-2xl sm:rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="bg-emerald-900 px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-emerald-900 px-5 sm:px-6 py-3.5 sm:py-4 text-white flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-800 border border-emerald-600 flex items-center justify-center text-emerald-200 font-bold text-xl shadow-inner shrink-0">
               {customer.customerType === 'empresa' ? (
@@ -573,7 +573,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         )}
 
         {/* Debt Summary Banner */}
-        <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
             {/* Saldo do Mês Atual (Mês Corrente) */}
             <div className="bg-white px-3.5 py-2 rounded-xl border-2 border-emerald-500 shadow-2xs">
@@ -716,7 +716,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Feedback de sucesso de exportação (PDF ou CSV) */}
         {exportSuccessMessage && (
-          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 text-emerald-900 text-xs font-bold flex items-center justify-between animate-in fade-in">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 text-emerald-900 text-xs font-bold flex items-center justify-between animate-in fade-in shrink-0">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
               <span>{exportSuccessMessage}</span>
@@ -729,7 +729,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Inteligência de Consumo: O que este cliente mais compra */}
         {categoryAnalytics && categoryAnalytics.categories.length > 0 && (
-          <div className="bg-gradient-to-r from-emerald-50/80 via-white to-amber-50/70 border-b border-slate-200 px-5 sm:px-6 py-2.5">
+          <div className="bg-gradient-to-r from-emerald-50/80 via-white to-amber-50/70 border-b border-slate-200 px-5 sm:px-6 py-2.5 shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-base shrink-0">📊</span>
@@ -762,7 +762,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 bg-white px-6 overflow-x-auto text-xs font-bold">
+        <div className="flex border-b border-slate-200 bg-white px-4 sm:px-6 overflow-x-auto text-xs font-bold shrink-0">
           <button
             onClick={() => setActiveTab('fechamento_mensal')}
             className={`py-3 px-4 border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
@@ -805,7 +805,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Tab 1: FECHAMENTO MENSAL PADRONIZADO */}
         {activeTab === 'fechamento_mensal' && (
-          <div className="p-5 max-h-[55vh] overflow-y-auto bg-slate-50/60 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/60 space-y-4">
             {/* Aviso de pagamento recém efetuado */}
             {lastClosedPayment && (
               <div className="p-3 bg-emerald-100 text-emerald-900 rounded-xl border border-emerald-300 flex items-center justify-between text-xs">
@@ -1092,7 +1092,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Tab 2: LISTA TRADICIONAL DE LANÇAMENTOS */}
         {activeTab === 'fiados' && (
-          <div className="p-6 max-h-[50vh] overflow-y-auto bg-slate-50/50 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50 space-y-3">
             {debtInfo.entries.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-40" />
@@ -1228,7 +1228,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Tab 3: HISTÓRICO DE PAGAMENTOS */}
         {activeTab === 'pagamentos' && (
-          <div className="p-6 max-h-[50vh] overflow-y-auto bg-slate-50/50 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50 space-y-3">
             {payments.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-40" />
@@ -1309,7 +1309,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="p-4 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={handleExportPdf}
